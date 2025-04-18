@@ -71,6 +71,34 @@
             /* BG for calendar grid */
         }
 
+        /* --- Layout for side-by-side cards --- */
+        .main-content-wrapper {
+            display: flex;
+            gap: 2.5rem;
+            /* Match card margin-bottom */
+            align-items: flex-start;
+            /* Align items to the top */
+        }
+
+        .main-content-wrapper>.card {
+            margin-bottom: 0;
+            /* Remove bottom margin as gap handles spacing */
+        }
+
+        .main-content-wrapper>#habits-card {
+            flex: 2;
+            /* Give habits more space */
+        }
+
+        .main-content-wrapper>.stats-section {
+            flex: 1;
+            /* Calendar takes less space */
+            min-width: 300px;
+            /* Ensure calendar doesn't get too squished */
+            /* Optionally add a max-width if needed */
+        }
+
+        /* --- Base Styles --- */
         * {
             margin: 0;
             padding: 0;
@@ -711,7 +739,30 @@
             }
         }
 
-        /* Added spin animation */
+        /* --- Responsive Layout --- */
+        @media (max-width: 900px) {
+
+            /* Adjust breakpoint as needed */
+            .main-content-wrapper {
+                flex-direction: column;
+                gap: 2rem;
+            }
+
+            .main-content-wrapper>.card {
+                margin-bottom: 2rem;
+                /* Re-add margin for vertical stacking */
+            }
+
+            .main-content-wrapper>#habits-card,
+            .main-content-wrapper>.stats-section {
+                flex: 1;
+                /* Reset flex basis */
+                width: 100%;
+                /* Take full width when stacked */
+                min-width: initial;
+                /* Reset min-width */
+            }
+        }
     </style>
 </head>
 
@@ -724,34 +775,38 @@
             <div class="motivation-quote" id="motivation-quote">Let's make today amazing!</div>
         </header>
 
-        <div class="card">
-            <div class="form-group">
-                <input type="text" id="habit-input" placeholder="Add a growing habit! 🌱" autocomplete="off" disabled>
-                <button id="add-habit-btn" disabled><i class="fa-solid fa-plus"></i> Add!</button>
+        <div class="main-content-wrapper">
+            <div class="card" id="habits-card">
+                <div class="form-group">
+                    <input type="text" id="habit-input" placeholder="Add a growing habit! 🌱" autocomplete="off"
+                        disabled>
+                    <button id="add-habit-btn" disabled><i class="fa-solid fa-plus"></i> Add!</button>
+                </div>
+
+                <!-- Added Loading State Div -->
+                <div class="loading-state" id="loading-state">
+                    <p>Loading your beautiful habits... Please wait 💖</p>
+                </div>
+
+                <div class="habit-list" id="habit-list" style="display: none;">
+                    <!-- Habits will be added here -->
+                </div>
+
+                <div class="empty-state" id="empty-state" style="display: none;">
+                    <p>No habits blooming yet! Plant the first seed today! (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧</p>
+                </div>
             </div>
 
-            <!-- Added Loading State Div -->
-            <div class="loading-state" id="loading-state">
-                <p>Loading your beautiful habits... Please wait 💖</p>
-            </div>
-
-            <div class="habit-list" id="habit-list" style="display: none;">
-                <!-- Habits will be added here -->
-            </div>
-
-            <div class="empty-state" id="empty-state" style="display: none;">
-                <p>No habits blooming yet! Plant the first seed today! (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧</p>
-            </div>
-        </div>
-
-        <div class="card stats-section">
-            <h2 class="stats-title">Your Lovely Progress (Last 28 Days)</h2>
-            <div class="calendar" id="calendar">
-                <!-- Calendar days will be added here -->
-            </div>
-            <div class="reset-data-container">
-                <button id="reset-data-btn" class="btn-small" disabled><i class="fa-solid fa-arrows-rotate"></i> Reset
-                    Data</button>
+            <div class="card stats-section">
+                <h2 class="stats-title">Your Lovely Progress (Last 28 Days)</h2>
+                <div class="calendar" id="calendar">
+                    <!-- Calendar days will be added here -->
+                </div>
+                <div class="reset-data-container">
+                    <button id="reset-data-btn" class="btn-small" disabled><i class="fa-solid fa-arrows-rotate"></i>
+                        Reset
+                        Data</button>
+                </div>
             </div>
         </div>
 
