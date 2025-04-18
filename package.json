@@ -1,0 +1,13 @@
+{
+  "name": "kawaii-habit-tracker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo \"const SUPABASE_URL = process.env.SUPABASE_URL;\\nconst SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;\" > config.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
