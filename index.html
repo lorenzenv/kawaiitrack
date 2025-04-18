@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>✩ Kawaii Habit Tracker ✩</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    
-        <!-- Supabase Client Library -->
-        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-        <!-- Vercel will generate this file during build -->
-        <script src="config.js"></script>  <!-- ADD THIS LINE -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✩ awesomeee ✩</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Supabase Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Vercel will generate this file during build -->
+    <script src="config.js"></script>
+
     <style>
         :root {
             /* --- Kawaii Color Palette --- */
@@ -25,581 +26,219 @@
             --success-dark: #87e0a6;
             --danger: #ffb3c1; /* Soft Red/Pink */
             --danger-dark: #ff9bad;
-            --background: #fff0f5; /* Lavender Blush */
+            --background-start: #fff0f5; /* Lavender Blush Start */
+            --background-end: #ffffff;   /* White End */
             --card: #ffffff;
+            --card-completed-bg: #f0fff5; /* Background for completed items */
             --text: #6d6875; /* Muted Purple/Gray */
             --text-light: #a39daa; /* Lighter Muted Purple */
             --border: #ffe5ec; /* Very Light Pink */
-            --border-radius: 20px; /* Increased roundness */
-            --shadow: 0 5px 15px -3px rgba(255, 175, 204, 0.2), 0 4px 6px -4px rgba(255, 175, 204, 0.15); /* Softer pink shadow */
-            --kawaii-font: 'M PLUS Rounded 1c', sans-serif; /* Cute Font */
+            --border-radius: 20px;
+            --shadow: 0 5px 15px -3px rgba(255, 175, 204, 0.15), 0 4px 6px -4px rgba(255, 175, 204, 0.1);
+            --kawaii-font: 'M PLUS Rounded 1c', sans-serif;
+
+            /* --- HSL Color values for Calendar Gradient --- */
+            --calendar-hue: 140; /* Hue for the green */
+            --calendar-sat-max: 70%; /* Max saturation for 100% */
+            --calendar-sat-min: 40%; /* Min saturation for >0% */
+            --calendar-light-max: 98%; /* Lightness for >0% but not 100% */
+            --calendar-light-min: 82%; /* Lightness for 100% */
+            --calendar-bg-base: #ffffff; /* Base background */
+            --calendar-bg-empty: #fffafa; /* BG for calendar grid */
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: var(--kawaii-font); /* Apply cute font */
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--kawaii-font); }
         body {
-            background-color: var(--background);
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M14 0 L16.09 5.36 L21.88 5.36 L17.4 8.64 L19.5 14 L14 10.72 L8.5 14 L10.6 8.64 L6.12 5.36 L11.91 5.36 Z' fill='%23FFECF2' fill-opacity='0.5'/%3E%3C/svg%3E"); /* Subtle star pattern */
-            color: var(--text);
-            min-height: 100vh;
-            padding: 2rem;
-            transition: background-color 0.3s ease; /* Smooth transitions */
+            background-image: linear-gradient(to bottom, var(--background-start), var(--background-end)),
+                              url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M14 0 L16.09 5.36 L21.88 5.36 L17.4 8.64 L19.5 14 L14 10.72 L8.5 14 L10.6 8.64 L6.12 5.36 L11.91 5.36 Z' fill='%23FFECF2' fill-opacity='0.5'/%3E%3C/svg%3E");
+            background-color: var(--background-start); color: var(--text); min-height: 100vh;
+            padding: 3rem; transition: background-color 0.3s ease;
         }
-
-        .container {
-            max-width: 700px; /* Slightly smaller for cuter proportions */
-            margin: 0 auto;
-        }
-
+        .container { max-width: 800px; margin: 0 auto; }
         header {
-            margin-bottom: 2.5rem;
-            text-align: center;
-            animation: fadeInDown 0.5s ease-out;
+            margin-bottom: 2rem; text-align: center;
+            animation: fadeInDown 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+            position: relative;
         }
-
         h1 {
-            color: var(--primary);
-            font-size: 2.5rem; /* Slightly larger */
-            margin-bottom: 0.5rem;
-            font-weight: 700;
-            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.7); /* Subtle text shadow */
+            color: var(--primary); font-size: 3rem; margin-bottom: 0.5rem;
+            font-weight: 700; text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.7);
         }
-         h1::before {
-            content: '✩ '; /* Star decoration */
-            opacity: 0.8;
-         }
-          h1::after {
-            content: ' ✩'; /* Star decoration */
-            opacity: 0.8;
-         }
-
-
-        .date {
-            color: var(--text-light);
-            font-size: 1.1rem;
-            font-weight: 500;
+        h1::before, h1::after { content: '✩ '; opacity: 0.8; }
+        .date { color: var(--text-light); font-size: 1.2rem; font-weight: 500; margin-bottom: 1rem; }
+        .motivation-quote {
+            font-size: 1.05rem; color: var(--primary-dark); font-style: italic;
+            margin-bottom: 2rem; min-height: 1.3em; display: inline-block;
+            background-color: rgba(255, 255, 255, 0.6); padding: 0.4rem 1rem;
+            border-radius: 15px; box-shadow: 0 2px 4px rgba(255, 175, 204, 0.1);
+            transition: opacity 0.2s linear; opacity: 1;
         }
-
+        .motivation-quote::before { content: '✨ '; } .motivation-quote::after { content: ' ✨'; }
         .card {
-            background-color: var(--card);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            padding: 2rem; /* More padding */
-            margin-bottom: 2rem;
-            border: 1px solid var(--border);
-            position: relative; /* For potential decorations */
-            overflow: hidden; /* Ensure decorations don't overflow */
-            transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+            background-color: var(--card); border-radius: var(--border-radius); box-shadow: var(--shadow);
+            padding: 2.5rem; margin-bottom: 2.5rem; border: 1px solid var(--border);
+            position: relative; overflow: hidden;
+            transition: transform 0.25s ease-out, box-shadow 0.25s ease-out;
         }
         .card:hover {
-             transform: translateY(-3px) scale(1.01); /* Subtle lift effect */
-             box-shadow: 0 8px 20px -3px rgba(255, 175, 204, 0.25), 0 6px 10px -4px rgba(255, 175, 204, 0.2);
+             transform: translateY(-4px) scale(1.015);
+             box-shadow: 0 10px 25px -5px rgba(255, 175, 204, 0.2), 0 8px 12px -6px rgba(255, 175, 204, 0.15);
         }
-
-        /* Small heart decoration on card */
         .card::before {
-            content: '♡';
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            font-size: 1.5rem;
-            color: var(--primary-light);
-            opacity: 0.5;
+            content: '♡'; position: absolute; top: 12px; right: 18px;
+            font-size: 1.8rem; color: var(--primary-light); opacity: 0.5;
         }
-
-        .form-group {
-            display: flex;
-            gap: 0.75rem;
-            margin-bottom: 1.5rem; /* More space */
-        }
-
+        .form-group { display: flex; gap: 1rem; margin-bottom: 2rem; }
         input[type="text"] {
-            flex: 1;
-            padding: 0.85rem 1.2rem; /* Slightly larger padding */
-            border: 2px solid var(--border); /* Slightly thicker border */
-            border-radius: var(--border-radius);
-            font-size: 1rem;
-            color: var(--text);
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-            background-color: #fffafa; /* Very light pinkish background */
+            flex: 1; padding: 1rem 1.5rem; border: 2px solid var(--border);
+            border-radius: var(--border-radius); font-size: 1.1rem; color: var(--text);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease; background-color: #fffafa;
         }
-
-        input[type="text"]:focus {
-            outline: none;
-            border-color: var(--primary-light);
-            box-shadow: 0 0 0 3px rgba(255, 175, 204, 0.3); /* Pink glow on focus */
-        }
-
+        input[type="text"]:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(255, 175, 204, 0.3); }
         button {
-            cursor: pointer;
-            padding: 0.85rem 1.5rem;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: var(--border-radius);
-            font-size: 1rem;
-            font-weight: 700; /* Bolder button text */
+            cursor: pointer; padding: 1rem 1.8rem; background-color: var(--primary);
+            color: white; border: none; border-radius: var(--border-radius);
+            font-size: 1.1rem; font-weight: 700;
             transition: background-color 0.2s ease, transform 0.15s ease-out;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
         }
-
-        button:hover {
-            background-color: var(--primary-dark);
-            transform: translateY(-2px) scale(1.02); /* Bouncy hover effect */
-        }
-        button:active {
-            transform: translateY(0px) scale(0.98); /* Press down effect */
-        }
-
-        .btn-small {
-            padding: 0.5rem 0.8rem;
-            font-size: 0.875rem;
-            border-radius: 15px; /* Smaller buttons also rounded */
-        }
-
-        .btn-danger {
-            background-color: var(--danger);
-        }
-
-        .btn-danger:hover {
-            background-color: var(--danger-dark);
-        }
-
-        .habit-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem; /* More spacing */
-        }
-
+        button:hover { background-color: var(--primary-dark); transform: translateY(-3px) scale(1.03); }
+        button:active { transform: translateY(0px) scale(0.98); }
+        button:disabled { background-color: var(--text-light); cursor: not-allowed; transform: none; } /* Added disabled style */
+        .btn-small { padding: 0.6rem 1rem; font-size: 0.95rem; border-radius: 15px; }
+        .btn-danger { background-color: var(--danger); }
+        .btn-danger:hover { background-color: var(--danger-dark); }
+        .btn-secondary { background-color: var(--text-light); color: white; }
+        .btn-secondary:hover { background-color: var(--text); }
+        .habit-list { display: flex; flex-direction: column; gap: 1.2rem; min-height: 60px; /* Prevent collapse */ }
+        @keyframes flash { 0% { background-color: var(--accent); transform: scale(1.02); } 100% { background-color: var(--card); transform: scale(1); } }
         .habit-item {
-            display: flex;
-            align-items: center;
-            padding: 1rem 1.2rem;
-            background-color: white;
-            border: 2px solid var(--border); /* Thicker border */
-            border-radius: var(--border-radius);
-            transition: all 0.25s ease-out;
-            animation: popIn 0.4s ease-out forwards; /* Add animation */
-            opacity: 0; /* Start hidden for animation */
-            transform: scale(0.95);
+            display: flex; align-items: center; padding: 1.2rem 1.5rem;
+            background-color: var(--card); border: 2px solid var(--border);
+            border-radius: var(--border-radius); transition: all 0.3s ease-out;
+            animation: popIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+            opacity: 0; transform: scale(0.98);
         }
-        /* Stagger animation */
-        .habit-item:nth-child(1) { animation-delay: 0.05s; }
-        .habit-item:nth-child(2) { animation-delay: 0.1s; }
-        .habit-item:nth-child(3) { animation-delay: 0.15s; }
-        /* Add more if needed */
-
-        .habit-item:hover {
-            transform: translateY(-3px) scale(1.01); /* Lift on hover */
-            border-color: var(--primary-light);
-            box-shadow: var(--shadow);
-        }
-
-        .habit-item.completed {
-            border-left: 6px solid var(--success); /* Thicker success border */
-            background-color: #f0fff5; /* Light green background */
-        }
-
-        /* --- Kawaii Checkbox --- */
+        .habit-item.flash-add { animation: flash 0.4s ease-out forwards; }
+        .habit-item:hover { transform: translateY(-4px) scale(1.015); border-color: var(--primary-light); box-shadow: var(--shadow); }
+        .habit-item.completed { border-left: 6px solid var(--success); background-color: var(--card-completed-bg); }
         .habit-checkbox {
-            margin-right: 1.2rem;
-            width: 24px;
-            height: 24px;
-            border: 2px solid var(--primary-light); /* Pink border */
-            border-radius: 8px; /* Rounded square */
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy transition */
-            position: relative;
-            background-color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            margin-right: 1.5rem; width: 28px; height: 28px; border: 2px solid var(--primary-light);
+            border-radius: 8px; cursor: pointer; transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative; background-color: white; display: flex; align-items: center;
+            justify-content: center; flex-shrink: 0;
         }
-
         .habit-checkbox::after {
-            /* Using Font Awesome heart */
-            font-family: "Font Awesome 6 Free";
-            content: "\f004"; /* Heart icon */
-            font-weight: 900;
-            position: absolute;
-            color: var(--success);
-            font-size: 14px;
-            transform: scale(0); /* Start hidden */
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy transition */
+            font-family: "Font Awesome 6 Free"; content: "\f004"; font-weight: 900;
+            position: absolute; color: var(--success); font-size: 16px; transform: scale(0);
+            transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-
-        .habit-item.completed .habit-checkbox {
-            background-color: var(--success); /* Green background when checked */
-            border-color: var(--success-dark);
-            transform: rotate(10deg) scale(1.1); /* Tilt and grow when checked */
-        }
-
-        .habit-item.completed .habit-checkbox::after {
-            transform: scale(1); /* Show heart */
-            color: white; /* White heart on green background */
-        }
-
-        .habit-text {
-            flex: 1;
-            font-size: 1.05rem; /* Slightly larger text */
-            font-weight: 500;
-        }
-
-        .habit-item.completed .habit-text {
-            text-decoration: line-through;
-            text-decoration-color: var(--primary); /* Pink strikethrough */
-            text-decoration-thickness: 2px;
-            color: var(--text-light);
-            font-style: italic;
-        }
-
-        .habit-actions {
-            display: flex;
-            gap: 0.6rem;
-            align-items: center; /* Align icons nicely */
-        }
-        /* Replace buttons with cute icons */
+        .habit-item.completed .habit-checkbox { background-color: var(--success); border-color: var(--success-dark); transform: rotate(10deg) scale(1.15); }
+        .habit-item.completed .habit-checkbox::after { transform: scale(1); color: white; }
+        .habit-text { flex: 1; font-size: 1.15rem; font-weight: 500; word-break: break-word; margin-right: 1rem; transition: color 0.3s ease, text-decoration-color 0.3s ease; }
+        .habit-item.completed .habit-text { text-decoration: line-through; text-decoration-color: var(--primary); text-decoration-thickness: 2px; color: var(--text-light); font-style: italic; }
+        .habit-actions { display: flex; gap: 0.8rem; align-items: center; }
         .habit-actions button {
-            background: none;
-            border: none;
-            color: var(--text-light);
-            font-size: 1.2rem; /* Icon size */
-            padding: 0.3rem;
-            border-radius: 50%;
-            width: 35px;
-            height: 35px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: none;
+            background: none; border: none; color: var(--text-light); font-size: 1.3rem;
+            padding: 0.4rem; border-radius: 50%; width: 40px; height: 40px; display: inline-flex;
+            align-items: center; justify-content: center; box-shadow: none;
             transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
         }
-        .habit-actions button:hover {
-            color: var(--primary);
-            background-color: #fff0f5; /* Light pink background on hover */
-            transform: scale(1.1);
+        .habit-actions button:hover { color: var(--primary); background-color: #fff0f5; transform: scale(1.15); }
+        .habit-actions .delete-habit:hover { color: var(--danger-dark); background-color: #fff0f0; }
+        .empty-state, .loading-state /* Added loading state style */ {
+            text-align: center; padding: 4rem 2rem; color: var(--text-light);
+            border: 2px dashed var(--border); border-radius: var(--border-radius);
+            background-color: #fffafa; margin-top: 2rem;
         }
-        .habit-actions .delete-habit:hover {
-            color: var(--danger-dark);
-            background-color: #fff0f0; /* Light red background on hover */
-        }
-
-
-        .empty-state {
-            text-align: center;
-            padding: 3rem 1rem;
-            color: var(--text-light);
-            border: 2px dashed var(--border);
-            border-radius: var(--border-radius);
-            background-color: #fffafa;
-            margin-top: 1rem;
-        }
-        .empty-state p {
-            font-size: 1.1rem;
-            line-height: 1.6;
-        }
-        .empty-state::before {
-            content: '(づ ◕‿◕ )づ'; /* Cute emoticon */
-            font-size: 2rem;
-            display: block;
-            margin-bottom: 1rem;
-            color: var(--primary);
-        }
-
-        .streak-section {
-            display: flex;
-            justify-content: space-around; /* Space out more */
-            margin-bottom: 2rem;
-            gap: 1rem;
-            animation: fadeInUp 0.6s ease-out;
-        }
-
-        .streak-card {
-            flex: 1;
-            padding: 1.2rem;
-            text-align: center;
-            background-color: var(--card);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-            transition: transform 0.2s ease-out;
-            position: relative; /* For potential decorations */
-            overflow: hidden;
-        }
-         .streak-card::after { /* Add a little star decoration */
-             content: '✨';
-             position: absolute;
-             bottom: 5px;
-             right: 10px;
-             font-size: 1.2rem;
-             opacity: 0.6;
-             transform: rotate(-15deg);
-         }
-
-        .streak-card:hover {
-            transform: translateY(-4px);
-        }
-
-        .streak-value {
-            font-size: 2.5rem; /* Bigger numbers */
-            font-weight: 700;
-            margin-bottom: 0.25rem;
-            color: var(--primary); /* Pink numbers */
-            transition: color 0.3s ease; /* Animate color changes */
-        }
-        .streak-value:hover {
-             color: var(--primary-dark);
-        }
-
-        .streak-label {
-            color: var(--text-light);
-            font-size: 0.9rem; /* Slightly larger label */
-            font-weight: 500;
-        }
-
-        .stats-section {
-            margin-top: 2.5rem;
-            animation: fadeInUp 0.7s ease-out;
-        }
-
-        .stats-title {
-            font-size: 1.5rem; /* Bigger title */
-            margin-bottom: 1.5rem;
-            color: var(--secondary); /* Blue title */
-            text-align: center;
-            font-weight: 700;
-        }
-        .stats-title::before { content: '🗓️ '; } /* Calendar emoji */
-
-        .calendar {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 0.6rem; /* Slightly more gap */
-            background-color: #fffafa; /* Light background for calendar area */
-            padding: 1rem;
-            border-radius: var(--border-radius);
-            border: 1px solid var(--border);
-        }
-
-        .calendar-day {
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #ffffff; /* White days */
-            border-radius: 10px; /* Rounder days */
-            font-size: 0.8rem;
-            font-weight: 500;
-            cursor: default;
-            border: 1px solid var(--border);
-            transition: all 0.2s ease;
-            position: relative;
-        }
-
-        .calendar-day.has-completed {
-            background-color: var(--success); /* Mint green */
-            color: var(--text); /* Darker text for contrast */
-            font-weight: 700;
-            transform: scale(1.05); /* Pop effect */
-            border-color: var(--success-dark);
-        }
-        /* Add a little star on completed days */
-        .calendar-day.has-completed::after {
-            content: '★';
-            position: absolute;
-            top: 2px;
-            right: 3px;
-            font-size: 0.6rem;
-            color: rgba(255, 255, 255, 0.8);
-        }
-
-
-        .calendar-day.today {
-            border: 2px solid var(--primary); /* Pink border for today */
-            color: var(--primary);
-            font-weight: 700;
-        }
-         .calendar-day:not(.has-completed):hover {
-             background-color: #fff5f8; /* Very light pink hover */
-             transform: scale(1.03);
-         }
-
-        /* --- Modal Styling --- */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 175, 204, 0.3); /* Pinkish overlay */
-            backdrop-filter: blur(5px); /* Blur background */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-
-        .modal.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .modal-content {
-            background-color: var(--card);
-            padding: 2.5rem; /* More padding */
-            border-radius: var(--border-radius);
-            width: 90%;
-            max-width: 450px; /* Slightly smaller modal */
-            transform: scale(0.95) translateY(-20px);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy transition */
-            box-shadow: 0 10px 30px -5px rgba(255, 175, 204, 0.4); /* Stronger shadow */
-             border: 2px solid var(--primary-light);
-        }
-
-        .modal.show .modal-content {
-            transform: scale(1) translateY(0);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            border-bottom: 1px dashed var(--border); /* Dashed line separator */
-            padding-bottom: 1rem;
-        }
-
-        .modal-title {
-            font-size: 1.6rem; /* Larger title */
-            color: var(--primary);
-            font-weight: 700;
-        }
-         .modal-title::before { content: '✏️ '; } /* Pencil emoji */
-
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 2rem;
-            color: var(--text-light);
-            cursor: pointer;
-            transition: color 0.2s ease, transform 0.2s ease;
-            padding: 0;
-            line-height: 1;
-        }
-        .modal-close:hover {
-            color: var(--danger);
-            transform: rotate(90deg);
-        }
-
-        .modal-body {
-            margin-bottom: 2rem;
-        }
-
-        .modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 1rem;
-        }
-
-        .btn-secondary {
-            background-color: var(--text-light); /* Use text light color */
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background-color: var(--text);
-        }
-
-        /* --- Animations --- */
-        @keyframes popIn {
-            0% { opacity: 0; transform: scale(0.8); }
-            80% { opacity: 1; transform: scale(1.05); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-
-        @keyframes fadeInDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* --- Responsive Adjustments --- */
-        @media (max-width: 768px) {
-            body {
-                padding: 1rem;
-            }
-            h1 { font-size: 2rem; }
-            .streak-section {
-                flex-direction: column;
-                gap: 1rem;
-            }
-            .streak-card { margin: 0; }
-            .calendar { grid-template-columns: repeat(7, 1fr); gap: 0.4rem; padding: 0.8rem; } /* Keep 7 columns if possible */
-             .calendar-day { font-size: 0.7rem; }
-        }
-
-        @media (max-width: 480px) {
-             h1 { font-size: 1.8rem; }
-            .form-group { flex-direction: column; }
-             input[type="text"] { font-size: 0.9rem;}
-             button { font-size: 0.9rem; padding: 0.75rem 1.2rem;}
-            .habit-item { padding: 0.8rem 1rem; flex-wrap: wrap; } /* Allow wrap on small screens */
-            .habit-text { font-size: 0.95rem; margin-bottom: 0.5rem; /* Add space if actions wrap below */ width: 100%; order: 1; /* Ensure text is first */ }
-            .habit-checkbox { margin-right: 0.8rem; order: 0;}
-            .habit-actions { order: 2; margin-left: auto; /* Push actions to the right */ }
-            .streak-value { font-size: 2rem; }
-            .modal-content { padding: 1.5rem; }
-            .modal-title { font-size: 1.4rem; }
-            .calendar { gap: 0.3rem; padding: 0.5rem; }
-        }
+        .empty-state p, .loading-state p { font-size: 1.2rem; line-height: 1.7; }
+        .empty-state::before { content: '(づ ◕‿◕ )づ'; font-size: 2.5rem; display: block; margin-bottom: 1.5rem; color: var(--primary); }
+        .loading-state::before { content: '🌸'; font-size: 2.5rem; display: block; margin-bottom: 1.5rem; color: var(--secondary); animation: spin 1.8s linear infinite; } /* Loading spinner */
+        .streak-section { display: flex; justify-content: space-around; margin-bottom: 2.5rem; gap: 1.5rem; animation: fadeInUp 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+        .streak-card { flex: 1; padding: 1.5rem; text-align: center; background-color: var(--card); border-radius: var(--border-radius); box-shadow: var(--shadow); border: 1px solid var(--border); transition: transform 0.25s ease-out, box-shadow 0.25s ease-out; position: relative; overflow: hidden; }
+        .streak-card::after { content: '✨'; position: absolute; bottom: 8px; right: 12px; font-size: 1.4rem; opacity: 0.6; transform: rotate(-15deg); }
+        .streak-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(255, 175, 204, 0.2), 0 8px 12px -6px rgba(255, 175, 204, 0.15); }
+        .streak-value { font-size: 3rem; font-weight: 700; margin-bottom: 0.4rem; color: var(--primary); transition: color 0.3s ease, transform 0.3s ease; }
+        .streak-value:hover { color: var(--primary-dark); transform: scale(1.05); }
+        .streak-label { color: var(--text-light); font-size: 1rem; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+        .streak-label i { color: var(--primary-light); font-size: 1.1em; }
+        .stats-section { margin-top: 3rem; animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.1s forwards; }
+        .stats-title { font-size: 1.8rem; margin-bottom: 2rem; color: var(--secondary); text-align: center; font-weight: 700; }
+        .stats-title::before { content: '🗓️ '; }
+        .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.8rem; background-color: var(--calendar-bg-empty); padding: 1.5rem; border-radius: var(--border-radius); border: 1px solid var(--border); }
+        .calendar-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background-color: var(--calendar-bg-base); border-radius: 12px; font-size: 0.9rem; font-weight: 500; cursor: default; border: 1px solid var(--border); transition: all 0.25s ease; position: relative; }
+        .calendar-day.fully-completed { color: var(--text); font-weight: 700; transform: scale(1.08); border-color: var(--success-dark); box-shadow: 0 0 10px rgba(176, 242, 194, 0.5); }
+        .calendar-day.fully-completed::after { content: '★'; position: absolute; top: 3px; right: 4px; font-size: 0.7rem; color: rgba(255, 255, 255, 0.8); }
+        .calendar-day.today { border: 3px solid var(--primary); color: var(--primary); font-weight: 700; z-index: 1; }
+        .calendar-day:not(.fully-completed):hover { transform: scale(1.05); border-color: var(--primary-light); background-color: hsla(var(--calendar-hue), 20%, 95%, 0.5); }
+        .calendar-day.fully-completed:hover { box-shadow: 0 0 15px rgba(176, 242, 194, 0.6); }
+        .reset-data-container { text-align: center; margin-top: 2rem; }
+        #reset-data-btn { background-color: var(--text-light); color: white; font-size: 1rem; padding: 0.8rem 1.5rem; }
+        #reset-data-btn:hover { background-color: var(--danger); }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 175, 204, 0.3); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.35s ease, visibility 0s linear 0.35s; }
+        .modal.show { opacity: 1; visibility: visible; transition: opacity 0.35s ease, visibility 0s linear 0s; }
+        .modal-content { background-color: var(--card); padding: 3rem; border-radius: var(--border-radius); width: 90%; max-width: 550px; transform: scale(0.9) translateY(-30px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 15px 40px -10px rgba(255, 175, 204, 0.5); border: 2px solid var(--primary-light); }
+        .modal.show .modal-content { transform: scale(1) translateY(0); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px dashed var(--border); padding-bottom: 1.5rem; }
+        .modal-title { font-size: 1.8rem; color: var(--primary); font-weight: 700; }
+        .modal-title::before { content: '✏️ '; }
+        .modal-close { background: none; border: none; font-size: 2.5rem; color: var(--text-light); cursor: pointer; transition: color 0.2s ease, transform 0.3s ease; padding: 0; line-height: 1; }
+        .modal-close:hover { color: var(--danger); transform: rotate(180deg) scale(1.1); }
+        .modal-body { margin-bottom: 2.5rem; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 1.2rem; }
+        @keyframes popIn { 0% { opacity: 0; transform: scale(0.95) translateY(15px); } 60% { opacity: 1; transform: scale(1.02) translateY(-5px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+        @keyframes fadeInDown { 0% { opacity: 0; transform: translateY(-30px); } 100% { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInUp { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } /* Added spin animation */
     </style>
 </head>
 <body>
+
     <div class="container">
         <header>
-            <h1>My Kawaii Habits</h1>
-            <div class="date" id="current-date"></div>
+            <h1>✩ awesomeee ✩</h1>
+            <div class="date" id="current-date">Loading date...</div>
+            <div class="motivation-quote" id="motivation-quote">Let's make today amazing!</div>
         </header>
 
         <section class="streak-section">
             <div class="streak-card">
-                <div class="streak-value" id="current-streak">0</div>
-                <div class="streak-label">💖 Current Streak</div>
+                <div class="streak-value" id="current-streak">-</div>
+                <div class="streak-label">
+                    <i class="fa-solid fa-heart" aria-hidden="true"></i> Current Streak
+                </div>
             </div>
             <div class="streak-card">
-                <div class="streak-value" id="completion-rate">0%</div>
-                <div class="streak-label">🌟 Completion Rate</div>
+                <div class="streak-value" id="completion-rate">-</div>
+                <div class="streak-label">
+                    <i class="fa-solid fa-star" aria-hidden="true"></i> Completion Rate
+                </div>
             </div>
             <div class="streak-card">
-                <div class="streak-value" id="total-completed">0</div>
-                <div class="streak-label">🎉 Total Completed</div>
+                <div class="streak-value" id="total-completed">-</div>
+                <div class="streak-label">
+                    <i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Total Completed
+                </div>
             </div>
         </section>
 
         <div class="card">
             <div class="form-group">
-                <input type="text" id="habit-input" placeholder="Add a cute new habit! ✨" autocomplete="off">
-                <button id="add-habit-btn"><i class="fa-solid fa-plus"></i> Add!</button>
+                <input type="text" id="habit-input" placeholder="Add a growing habit! 🌱" autocomplete="off" disabled>
+                <button id="add-habit-btn" disabled><i class="fa-solid fa-plus"></i> Add!</button>
             </div>
 
-            <div class="habit-list" id="habit-list">
+            <!-- Added Loading State Div -->
+            <div class="loading-state" id="loading-state">
+                 <p>Loading your beautiful habits... Please wait 💖</p>
+            </div>
+
+            <div class="habit-list" id="habit-list" style="display: none;">
                 <!-- Habits will be added here -->
             </div>
 
             <div class="empty-state" id="empty-state" style="display: none;">
-                 <p>No habits yet! Let's add something fun to track today! (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧</p>
+                 <p>No habits blooming yet! Plant the first seed today! (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧</p>
             </div>
         </div>
 
@@ -608,21 +247,26 @@
             <div class="calendar" id="calendar">
                 <!-- Calendar days will be added here -->
             </div>
+            <div class="reset-data-container">
+                <button id="reset-data-btn" class="btn-small" disabled><i class="fa-solid fa-arrows-rotate"></i> Reset Data</button>
+            </div>
         </div>
+
     </div>
 
+    <!-- Modal -->
     <div class="modal" id="edit-modal">
         <div class="modal-content">
-            <div class="modal-header">
+             <div class="modal-header">
                 <h2 class="modal-title">Edit Habit</h2>
                 <button class="modal-close" id="close-modal">×</button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
+                 <div class="form-group">
                     <input type="text" id="edit-habit-input" placeholder="New habit name...">
                 </div>
             </div>
-            <div class="modal-footer">
+             <div class="modal-footer">
                 <button class="btn-secondary" id="cancel-edit"><i class="fa-solid fa-xmark"></i> Cancel</button>
                 <button id="save-edit"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
             </div>
@@ -630,29 +274,17 @@
     </div>
 
     <script type="module"> // Use type="module" for async/await top-level
-        // --- WARNING ---
+        // === WARNING ===
         // This setup does NOT use user authentication or Row Level Security.
-        // Anyone with your Supabase URL and Anon Key can read, add, edit,
-        // and delete ALL habits and completions.
-        // Only use this if you understand and accept the risks.
-        // --- --- --- ---
+        // Data is publicly readable and writable via the Anon Key.
+        // === === === ===
 
-        // --- Supabase Setup ---
-        if (typeof SUPABASE_URL === 'undefined' || typeof SUPABASE_ANON_KEY === 'undefined') {
-            alert("⚠️ Supabase configuration not found! Make sure config.js is present and correct.");
-            // You might want to disable the app further here
-        }
-
-        const supabaseUrl = SUPABASE_URL;
-        const supabaseKey = SUPABASE_ANON_KEY;
-        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
-        // --- DOM Elements ---
+        // === DOM Elements ===
         const habitInput = document.getElementById('habit-input');
         const addHabitBtn = document.getElementById('add-habit-btn');
         const habitList = document.getElementById('habit-list');
         const emptyState = document.getElementById('empty-state');
-        const loadingState = document.getElementById('loading-state');
+        const loadingState = document.getElementById('loading-state'); // Get loading state div
         const currentDateElement = document.getElementById('current-date');
         const editModal = document.getElementById('edit-modal');
         const editHabitInput = document.getElementById('edit-habit-input');
@@ -663,323 +295,471 @@
         const completionRateElement = document.getElementById('completion-rate');
         const totalCompletedElement = document.getElementById('total-completed');
         const calendarElement = document.getElementById('calendar');
+        const motivationQuoteElement = document.getElementById('motivation-quote');
+        const resetDataBtn = document.getElementById('reset-data-btn');
 
-        // --- App State ---
-        let habits = []; // Stores { id, text, created_at } fetched from Supabase
-        let completions = {}; // Stores { 'YYYY-MM-DD': [habitId1, habitId2], ... } fetched from Supabase
+        // === Supabase Setup ===
+        let supabase = null; // Initialize later
+        try {
+            if (typeof SUPABASE_URL === 'undefined' || typeof SUPABASE_ANON_KEY === 'undefined') {
+                throw new Error("Supabase config variables not found. Check config.js or Vercel env vars.");
+            }
+            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log("Supabase client initialized.");
+             console.log("⚠️ App running without user authentication. Data is public.");
+        } catch (error) {
+            console.error("Supabase Initialization Error:", error);
+            alert(`Fatal Error: Could not initialize Supabase. ${error.message}`);
+            // Disable the whole app visually
+            document.body.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--danger); font-family: var(--kawaii-font);"><h1>Initialization Failed</h1><p>Could not connect to the data store. Please check the console and configuration.</p></div>`;
+        }
+
+        // === State ===
+        let habits = []; // Will be fetched from Supabase
+        let completions = {}; // { 'YYYY-MM-DD': [habitId1, ...] } - Will be fetched
         let currentEditId = null;
-        let today = ''; // YYYY-MM-DD format
-        let isLoading = true;
+        let today = ''; // Set in initializeApp
+        let isLoading = true; // Tracks loading state
 
-        // --- Helper Functions ---
+        // === Motivational Quotes ===
+        const quotes = [
+            "One step at a time!", "You've got this! ✨", "Keep shining brightly!",
+            "Progress, not perfection.", "Believe in your potential!",
+            "Small habits lead to big changes.", "Make today count!",
+            "You are capable of amazing things!", "Grow stronger every day.",
+            "Be proud of your efforts!", "Consistency is key!", "Plant positivity, harvest happiness."
+        ];
+
+        // === Helper Functions ===
         function formatDate() {
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             const todayDate = new Date();
+            // Display date immediately
             currentDateElement.textContent = todayDate.toLocaleDateString('en-US', options);
             return todayDate.toISOString().split('T')[0]; // YYYY-MM-DD format
         }
 
         function setLoading(loading) {
             isLoading = loading;
+            // Disable/Enable form elements
             habitInput.disabled = loading;
             addHabitBtn.disabled = loading;
+            resetDataBtn.disabled = loading; // Also disable reset during load
+            // Disable habit interaction buttons during load
+            habitList.querySelectorAll('button, .habit-checkbox').forEach(el => el.disabled = loading);
+
             if (loading) {
-                loadingState.style.display = 'block';
+                loadingState.style.display = 'block'; // Show loading
                 habitList.style.display = 'none';
                 emptyState.style.display = 'none';
+                // Reset stats to indicate loading
+                currentStreakElement.textContent = '-';
+                completionRateElement.textContent = '-';
+                totalCompletedElement.textContent = '-';
             } else {
-                loadingState.style.display = 'none';
-                 // renderHabits will handle showing list or empty state
+                loadingState.style.display = 'none'; // Hide loading
+                // renderHabits will decide whether to show the list or empty state
+                 renderHabits(); // Call renderHabits AFTER loading is false
             }
         }
 
-        // Basic HTML escaping function
-         function escapeHTML(str) {
-             const div = document.createElement('div');
-             if (typeof str === 'string') {
-                div.appendChild(document.createTextNode(str));
-                return div.innerHTML;
-             }
-             return ''; // Return empty string if input is not a string
-         }
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            if (typeof str === 'string') {
+               div.appendChild(document.createTextNode(str));
+               return div.innerHTML;
+            }
+            return '';
+        }
 
-        // --- Supabase Interaction Functions ---
-
+        // === Supabase Interaction Functions ===
         async function loadInitialData() {
+             if (!supabase) return; // Don't proceed if Supabase failed to init
+
             setLoading(true);
             try {
-                // Fetch habits (no user filter needed)
-                const { data: habitData, error: habitError } = await supabase
+                // Fetch habits in parallel with completions
+                const habitsPromise = supabase
                     .from('habits')
                     .select('id, text, created_at')
                     .order('created_at', { ascending: true });
 
-                if (habitError) throw habitError;
-                habits = habitData || [];
-
-                // Fetch completions (no user filter needed)
+                // Fetch completions for the relevant period (e.g., last 30 days for calendar)
                 const startDate = new Date();
-                startDate.setDate(startDate.getDate() - 30);
+                startDate.setDate(startDate.getDate() - 30); // Adjust range if needed
                 const startDateString = startDate.toISOString().split('T')[0];
-
-                const { data: completionData, error: completionError } = await supabase
+                const completionsPromise = supabase
                     .from('completions')
                     .select('habit_id, completed_at')
                     .gte('completed_at', startDateString);
 
-                if (completionError) throw completionError;
+                // Await both promises
+                const [habitsResult, completionsResult] = await Promise.all([habitsPromise, completionsPromise]);
 
-                // Process completions
-                completions = {};
-                (completionData || []).forEach(comp => {
+                // Process Habits
+                if (habitsResult.error) throw habitsResult.error;
+                habits = habitsResult.data || [];
+
+                // Process Completions
+                if (completionsResult.error) throw completionsResult.error;
+                completions = {}; // Reset completions object
+                (completionsResult.data || []).forEach(comp => {
                     const dateStr = comp.completed_at;
                     if (!completions[dateStr]) {
                         completions[dateStr] = [];
                     }
-                    // Ensure no duplicates if DB constraint somehow failed or data is old
                     if (!completions[dateStr].includes(comp.habit_id)) {
                         completions[dateStr].push(comp.habit_id);
                     }
                 });
 
-                renderHabits();
-                renderCalendar();
+                console.log("Data loaded:", { habits, completions });
+
+                // Update UI (Render happens in finally block via setLoading)
                 updateStats();
+                renderCalendar();
+
 
             } catch (error) {
                 console.error("Error loading data:", error.message);
                 alert(`Oops! 🥺 Could not load data: ${error.message}`);
+                // Keep UI disabled if loading fails critically
+                setLoading(true); // Stay in loading state visually
+                 loadingState.innerHTML = `<p>Error loading data. Please refresh. (｡•́︿•̀｡)</p>`; // Update message
             } finally {
+                // Render happens here after state is updated
                 setLoading(false);
             }
         }
 
         async function addHabit() {
+             if (!supabase || isLoading) return;
             const text = habitInput.value.trim();
-            if (text === '' || isLoading) return;
+            if (text === '') return;
 
-            setLoading(true);
+            setLoading(true); // Disable UI
 
             try {
-                // Insert habit (no user_id)
                 const { data, error } = await supabase
                     .from('habits')
-                    .insert({ text: text })
-                    .select()
-                    .single();
+                    .insert({ text: text }) // No user_id needed
+                    .select() // Return the inserted row
+                    .single(); // Expecting one row
 
                 if (error) throw error;
 
                 if (data) {
-                    habits.push(data);
-                    renderHabits();
-                    updateStats();
-                    renderCalendar();
-                    habitInput.value = '';
+                    habits.push(data); // Add to local state
+                    // UI update will happen via setLoading(false) -> renderHabits()
+                     habitInput.value = ''; // Clear input
+                    // Flash effect will be added in renderHabits logic now
                 } else {
-                     console.warn("Insert successful but no data returned.");
+                     console.warn("Habit insert successful but no data returned.");
                 }
-
             } catch (error) {
                 console.error("Error adding habit:", error.message);
                 alert(`Couldn't add habit: ${error.message} (｡•́︿•̀｡)`);
             } finally {
-                 setLoading(false);
+                setLoading(false); // Re-enable UI and trigger re-render
             }
         }
 
         async function toggleHabit(e) {
-            const habitId = parseInt(e.target.getAttribute('data-id'));
-            if (isNaN(habitId) || isLoading) return;
+             if (!supabase || isLoading) return;
+            const checkbox = e.target;
+            const habitId = parseInt(checkbox.getAttribute('data-id')); // Ensure ID is number
+            const habitItem = checkbox.closest('.habit-item');
+            if (isNaN(habitId) || !habitItem) return;
 
-             const habitElement = e.target.closest('.habit-item');
-             const isCurrentlyCompleted = habitElement.classList.contains('completed');
+            const isCurrentlyCompleted = habitItem.classList.contains('completed');
+            const targetState = !isCurrentlyCompleted; // The state we want to achieve
 
-             // --- Optimistic UI Update ---
-             habitElement.classList.toggle('completed');
-             if (!completions[today]) completions[today] = [];
-             const completedIndex = completions[today].indexOf(habitId);
+            // --- Optimistic UI Update ---
+            habitItem.classList.toggle('completed', targetState);
+            checkbox.setAttribute('aria-checked', targetState.toString());
+            checkbox.setAttribute('title', targetState ? 'Mark as incomplete' : 'Mark as complete');
 
-             if (isCurrentlyCompleted) { // Removing completion
-                 if (completedIndex > -1) completions[today].splice(completedIndex, 1);
-             } else { // Adding completion
-                 if (completedIndex === -1) completions[today].push(habitId);
-             }
-             updateStats();
-             renderCalendar(); // Update calendar day style
-             // --- End Optimistic Update ---
+            // Update local completions state optimistically
+            if (!completions[today]) completions[today] = [];
+            const completedIndex = completions[today].indexOf(habitId);
 
+            if (targetState) { // Adding completion
+                if (completedIndex === -1) completions[today].push(habitId);
+            } else { // Removing completion
+                if (completedIndex > -1) completions[today].splice(completedIndex, 1);
+            }
+            // Update stats/calendar based on optimistic state
+            updateStats();
+            renderCalendar();
+            // --- End Optimistic Update ---
+
+            // Prevent further clicks while processing
+            checkbox.disabled = true;
 
             try {
-                if (isCurrentlyCompleted) {
-                    // Delete completion record (no user_id)
+                if (targetState) { // Insert completion
+                    const { error } = await supabase
+                        .from('completions')
+                        .insert({ habit_id: habitId, completed_at: today });
+                    // Handle unique constraint violation gracefully
+                    if (error && error.code === '23505') {
+                        console.warn(`Completion already exists for habit ${habitId} on ${today}.`);
+                    } else if (error) {
+                        throw error; // Throw other errors
+                    }
+                } else { // Delete completion
                     const { error } = await supabase
                         .from('completions')
                         .delete()
                         .match({ habit_id: habitId, completed_at: today });
                     if (error) throw error;
-                } else {
-                    // Insert completion record (no user_id)
-                    const { error } = await supabase
-                        .from('completions')
-                        .insert({ habit_id: habitId, completed_at: today });
-                     // Handle potential unique constraint violation (user clicked twice fast)
-                     if (error && error.code === '23505') { // Postgres code for unique violation
-                         console.warn(`Completion for habit ${habitId} on ${today} already exists (ignored).`);
-                         // No need to throw, the state is likely already correct due to optimistic update
-                     } else if (error) {
-                         throw error; // Throw other errors
-                     }
                 }
-                 console.log(`Completion toggled successfully for habit ${habitId} on ${today}`);
+                console.log(`Completion toggled successfully for habit ${habitId} on ${today}`);
 
             } catch (error) {
                 console.error("Error toggling completion:", error.message);
                 alert(`Couldn't update completion: ${error.message} Σ(°ロ°)`);
 
-                 // --- Revert Optimistic Update on Error ---
-                 habitElement.classList.toggle('completed'); // Toggle back
-                 if (isCurrentlyCompleted) { // Add it back if removed
-                      if (completedIndex === -1) completions[today].push(habitId);
-                  } else { // Remove it if added
-                      if (completedIndex > -1) completions[today].splice(completedIndex, 1);
-                  }
-                 updateStats();
-                 renderCalendar();
-                 // --- End Revert ---
+                // --- Revert Optimistic Update on Error ---
+                habitItem.classList.toggle('completed', !targetState); // Toggle back
+                checkbox.setAttribute('aria-checked', (!targetState).toString());
+                checkbox.setAttribute('title', !targetState ? 'Mark as incomplete' : 'Mark as complete');
+                if (targetState) { // If we tried to add, remove it
+                    if (completedIndex === -1) { // Only remove if it was added optimistically
+                         const revertIndex = completions[today].indexOf(habitId);
+                         if (revertIndex > -1) completions[today].splice(revertIndex, 1);
+                     }
+                } else { // If we tried to remove, add it back
+                    if (completedIndex === -1) completions[today].push(habitId); // Add it back if it wasn't there before optimistic
+                }
+                // Re-render stats/calendar based on reverted state
+                updateStats();
+                renderCalendar();
+                // --- End Revert ---
+            } finally {
+                checkbox.disabled = false; // Re-enable checkbox
             }
         }
 
-        async function deleteHabit(e) {
-             const button = e.target.closest('.delete-habit');
-             if (!button || isLoading) return;
+        // Separate deletion logic after animation
+        async function performDeletion(habitId) {
+             if (!supabase) return;
+            try {
+                 // Delete from Supabase (cascade should handle completions)
+                const { error } = await supabase
+                    .from('habits')
+                    .delete()
+                    .match({ id: habitId });
+                if (error) throw error;
 
-             const habitId = parseInt(button.getAttribute('data-id'));
-             if (isNaN(habitId)) return;
+                // Update local state *after* successful deletion
+                habits = habits.filter(habit => habit.id !== habitId);
+                Object.keys(completions).forEach(date => {
+                    completions[date] = completions[date]?.filter(id => id !== habitId) ?? [];
+                });
 
-             const habitText = habits.find(h => h.id === habitId)?.text || 'this habit';
+                // Re-render the list fully
+                renderHabits();
 
-             if (confirm(`Are you sure you want to delete "${habitText}"? (｡•́︿•̀｡)`)) {
-                setLoading(true);
-                try {
-                    // Delete from Supabase (no user_id). Cascade delete should handle completions.
-                    const { error } = await supabase
-                        .from('habits')
-                        .delete()
-                        .match({ id: habitId });
-
-                    if (error) throw error;
-
-                    // Remove from local state
-                    habits = habits.filter(habit => habit.id !== habitId);
-                    Object.keys(completions).forEach(date => {
-                        completions[date] = completions[date].filter(id => id !== habitId);
-                    });
-
-                    renderHabits();
-                    updateStats();
-                    renderCalendar();
-
-                 } catch (error) {
-                    console.error("Error deleting habit:", error.message);
-                    alert(`Couldn't delete habit: ${error.message} (ಥ﹏ಥ)`);
-                 } finally {
-                    setLoading(false);
-                 }
-             }
+            } catch (error) {
+                 console.error("Error performing deletion:", error.message);
+                 alert(`Couldn't delete habit from database: ${error.message} (ಥ﹏ಥ)`);
+                 // Optional: Re-render to bring the item back visually if DB delete failed
+                 renderHabits();
+            } finally {
+                 // setLoading might be needed if we disable UI during animation
+                 setLoading(false); // Ensure UI is re-enabled
+            }
         }
 
-         async function saveEdit() {
-            const text = editHabitInput.value.trim();
-            if (text === '' || !currentEditId || isLoading) return;
+        // Visual deletion trigger
+        function deleteHabit(e) {
+            const button = e.target.closest('.delete-habit');
+            if (!button || isLoading) return; // Prevent during load/other ops
+            const habitId = parseInt(button.getAttribute('data-id'));
+             if (isNaN(habitId)) return;
+            const habitText = habits.find(h => h.id === habitId)?.text || 'this habit';
 
-            setLoading(true);
+            if (confirm(`Delete "${escapeHTML(habitText)}" forever? (｡•́︿•̀｡) This cannot be undone.`)) {
+                const habitItem = button.closest('.habit-item');
+                if (habitItem) {
+                    setLoading(true); // Disable other actions during animation/deletion
+                    // Apply transition styles for fade out/shrink
+                    habitItem.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out, margin-bottom 0.3s ease-out, padding 0.3s ease-out, height 0.3s ease-out';
+                    habitItem.style.opacity = '0';
+                    habitItem.style.transform = 'scale(0.95)';
+                    habitItem.style.marginBottom = '-1.2rem'; // Adjust based on your gap
+                    habitItem.style.paddingTop = '0';
+                    habitItem.style.paddingBottom = '0';
+                    habitItem.style.height = '0';
+                    // Wait for animation, then perform actual deletion
+                    setTimeout(() => performDeletion(habitId), 300); // Match transition duration
+                } else {
+                    // Fallback if item not found
+                    performDeletion(habitId);
+                }
+            }
+        }
+
+
+        async function saveEdit() {
+             if (!supabase || isLoading) return;
+            const newText = editHabitInput.value.trim();
+            if (newText === '' || !currentEditId) return;
+
+             // Find the original habit text for potential revert
+             const originalHabit = habits.find(h => h.id === currentEditId);
+             const originalText = originalHabit ? originalHabit.text : '';
+
+
+             // --- Optimistic UI Update ---
+             const habitIndex = habits.findIndex(h => h.id === currentEditId);
+             if (habitIndex !== -1) {
+                 habits[habitIndex].text = newText; // Update local state first
+                 renderHabits(); // Re-render list with new text
+             }
+             closeModal(); // Close modal immediately
+             // --- End Optimistic Update ---
+
+
+            setLoading(true); // Prevent other actions while saving
             try {
-                // Update habit (no user_id)
                 const { data, error } = await supabase
                     .from('habits')
-                    .update({ text: text })
+                    .update({ text: newText })
                     .match({ id: currentEditId })
-                    .select()
+                    .select() // Select to confirm update
                     .single();
 
                 if (error) throw error;
 
-                if (data) {
-                    const habitIndex = habits.findIndex(h => h.id === currentEditId);
-                    if (habitIndex !== -1) {
-                        habits[habitIndex] = data;
-                    }
-                    renderHabits();
-                }
-                 closeModal();
+                // Data should match our optimistic update, log if needed
+                console.log("Habit updated successfully in DB:", data);
+
 
             } catch (error) {
                 console.error("Error updating habit:", error.message);
                 alert(`Couldn't save changes: ${error.message} (ノಠ益ಠ)ノ彡┻━┻`);
+
+                 // --- Revert Optimistic Update on Error ---
+                 if (habitIndex !== -1) {
+                     habits[habitIndex].text = originalText; // Restore original text
+                     renderHabits(); // Re-render list with original text
+                 }
+                 // --- End Revert ---
             } finally {
-                 setLoading(false);
+                setLoading(false); // Re-enable UI
             }
         }
 
-        // --- Rendering Functions (mostly unchanged, ensure escapeHTML is used) ---
+        async function handleResetData() {
+             if (!supabase || isLoading) return;
+             if (confirm('Are you absolutely sure? This will delete ALL your habits and history permanently! Σ(°ロ°)')) {
+                 if(confirm('Last chance! Are you really, really sure you want to reset everything?')) {
+                    setLoading(true);
+                    try {
+                         // Delete all completions first (optional, cascade might handle)
+                         const { error: completionsError } = await supabase
+                             .from('completions')
+                             .delete()
+                             .neq('id', -1); // Condition to delete all, use something always true
+                          if (completionsError) throw completionsError;
+
+                         // Delete all habits
+                         const { error: habitsError } = await supabase
+                             .from('habits')
+                             .delete()
+                             .neq('id', -1); // Condition to delete all
+                         if (habitsError) throw habitsError;
+
+                        // Reset local state
+                        habits = [];
+                        completions = {};
+                        // UI update happens in finally via setLoading
+                        displayRandomQuote(); // Show a fresh quote
+
+                    } catch(error) {
+                         console.error("Error resetting data:", error.message);
+                         alert(`Couldn't reset data: ${error.message} (ಥ﹏ಥ)`);
+                    } finally {
+                         setLoading(false); // Re-enable UI and trigger re-render
+                    }
+                 }
+            }
+        }
+
+
+        // === Rendering Functions ===
         function renderHabits() {
-            if (isLoading) return;
+            if (isLoading) return; // Don't render while initial loading
+
+            const todayCompletions = completions[today] || [];
+            const fragment = document.createDocumentFragment(); // Use fragment for performance
 
             if (habits.length === 0) {
                 emptyState.style.display = 'block';
-                habitList.style.display = 'none';
-                habitList.innerHTML = '';
+                habitList.style.display = 'none'; // Hide list container
+                habitList.innerHTML = ''; // Clear just in case
             } else {
                 emptyState.style.display = 'none';
-                habitList.style.display = 'flex';
-                habitList.innerHTML = '';
-
-                const todayCompletions = completions[today] || [];
+                habitList.style.display = 'flex'; // Show list container
 
                 habits.forEach((habit, index) => {
                     const isCompleted = todayCompletions.includes(habit.id);
                     const habitElement = document.createElement('div');
                     habitElement.className = `habit-item ${isCompleted ? 'completed' : ''}`;
+                    habitElement.dataset.id = habit.id; // Use dataset for ID
+                    habitElement.style.animationDelay = `${index * 0.07}s`; // Stagger animation
 
                     habitElement.innerHTML = `
-                        <div class="habit-checkbox" data-id="${habit.id}" role="checkbox" aria-checked="${isCompleted}"></div>
+                        <div class="habit-checkbox" data-id="${habit.id}" role="checkbox" aria-checked="${isCompleted}" title="${isCompleted ? 'Mark as incomplete' : 'Mark as complete'}"></div>
                         <div class="habit-text">${escapeHTML(habit.text)}</div>
                         <div class="habit-actions">
                             <button class="btn-small edit-habit" data-id="${habit.id}" title="Edit Habit"><i class="fa-solid fa-pencil"></i></button>
                             <button class="btn-small btn-danger delete-habit" data-id="${habit.id}" title="Delete Habit"><i class="fa-solid fa-trash-can"></i></button>
                         </div>
                     `;
-                    habitList.appendChild(habitElement);
+                    fragment.appendChild(habitElement);
                 });
+                habitList.innerHTML = ''; // Clear previous content
+                habitList.appendChild(fragment); // Add new content
             }
-             attachHabitListeners();
+
+            addHabitEventListeners(); // Attach listeners to the new elements
+            updateStats(); // Always update stats after render
+            renderCalendar(); // Always update calendar after render
         }
 
-         function attachHabitListeners() {
-             document.querySelectorAll('.habit-checkbox').forEach(checkbox => {
-                 checkbox.removeEventListener('click', toggleHabit); // Prevent duplicates
-                 checkbox.addEventListener('click', toggleHabit);
-             });
-             document.querySelectorAll('.edit-habit').forEach(button => {
-                  button.removeEventListener('click', showEditModal);
-                 button.addEventListener('click', showEditModal);
-             });
-             document.querySelectorAll('.delete-habit').forEach(button => {
-                  button.removeEventListener('click', deleteHabit);
-                  button.addEventListener('click', deleteHabit);
-             });
-         }
-
-        function renderCalendar() {
-             if (isLoading) {
-                  calendarElement.innerHTML = '<div style="text-align: center; color: var(--text-light); padding: 1rem;">Loading calendar...</div>';
-                  return;
+         // (renderCalendar, calculate functions remain largely the same as previous Supabase version)
+         // ... include the renderCalendar, calculateStreak, calculateCompletionRate, calculateTotalCompleted functions
+         // from the previous verified Supabase example here ...
+         function renderCalendar() {
+             // If loading, maybe show a placeholder in the calendar too
+             if (isLoading && !calendarElement.querySelector('.loading-placeholder')) {
+                 calendarElement.innerHTML = '<div class="loading-placeholder" style="text-align: center; color: var(--text-light); padding: 2rem;">Loading calendar...</div>';
+                 return;
              }
-            calendarElement.innerHTML = '';
+             if (isLoading) return; // Don't recalculate if still loading
+
+             // Remove placeholder if it exists and we are no longer loading
+             const placeholder = calendarElement.querySelector('.loading-placeholder');
+             if (placeholder) placeholder.remove();
+
+
+            calendarElement.innerHTML = ''; // Clear previous calendar
             const days = [];
             const todayDate = new Date();
             const todayStr = todayDate.toISOString().split('T')[0];
+
+            // --- Get HSL values from CSS variables ---
+            const computedStyle = getComputedStyle(document.documentElement);
+            const hue = parseInt(computedStyle.getPropertyValue('--calendar-hue').trim());
+            const parseCssValue = (value) => parseInt(value.trim().replace('%', ''));
+            const satMax = parseCssValue(computedStyle.getPropertyValue('--calendar-sat-max'));
+            const satMin = parseCssValue(computedStyle.getPropertyValue('--calendar-sat-min'));
+            const lightMax = parseCssValue(computedStyle.getPropertyValue('--calendar-light-max'));
+            const lightMin = parseCssValue(computedStyle.getPropertyValue('--calendar-light-min'));
+            // ---
 
             for (let i = 27; i >= 0; i--) {
                 const date = new Date();
@@ -990,92 +770,97 @@
             days.forEach(date => {
                 const dateStr = date.toISOString().split('T')[0];
                 const dayOfMonth = date.getDate();
+                const dateObj = new Date(dateStr);
 
                 const dayElement = document.createElement('div');
                 dayElement.className = 'calendar-day';
                 dayElement.textContent = dayOfMonth;
 
-                const relevantHabitsForDate = habits.filter(habit => {
-                    const habitCreationDate = new Date(habit.created_at);
-                    return habitCreationDate.setHours(0,0,0,0) <= date.setHours(0,0,0,0);
-                });
-
+                const relevantHabits = habits.filter(habit =>
+                    new Date(habit.created_at).setHours(0,0,0,0) <= dateObj.setHours(0,0,0,0)
+                );
                 const completedOnDate = completions[dateStr] || [];
-                const anyCompleted = relevantHabitsForDate.some(habit => completedOnDate.includes(habit.id));
 
-                 if (anyCompleted) {
-                    dayElement.classList.add('has-completed');
-                     const completedNames = relevantHabitsForDate
-                         .filter(h => completedOnDate.includes(h.id))
-                         .map(h => h.text);
-                     if (completedNames.length > 0) {
-                         dayElement.title = `Completed: ${escapeHTML(completedNames.join(', '))}`;
-                     }
+                let numRelevant = relevantHabits.length;
+                let numCompleted = 0;
+                if (numRelevant > 0) {
+                    numCompleted = relevantHabits.filter(habit => completedOnDate.includes(habit.id)).length;
+                }
+                const completionPercentage = numRelevant > 0 ? (numCompleted / numRelevant) : 0;
+
+                 dayElement.classList.remove('fully-completed');
+                 if (completionPercentage > 0) {
+                    const currentSat = satMin + (satMax - satMin) * completionPercentage;
+                    const currentLight = lightMax - (lightMax - lightMin) * completionPercentage;
+                    dayElement.style.backgroundColor = `hsl(${hue}, ${currentSat}%, ${currentLight}%)`;
+                    if (completionPercentage === 1) {
+                        dayElement.classList.add('fully-completed');
+                    }
+                 } else {
+                     dayElement.style.backgroundColor = ''; // Use CSS default
                  }
 
+                if (numRelevant > 0) {
+                    dayElement.title = `Completed ${numCompleted}/${numRelevant} habits on ${date.toLocaleDateString()}`;
+                } else {
+                    dayElement.title = date.toLocaleDateString();
+                }
                 if (dateStr === todayStr) {
                     dayElement.classList.add('today');
                 }
-
                 calendarElement.appendChild(dayElement);
             });
         }
 
-        // --- Calculation Functions (logic is unchanged, relies on local state) ---
         function calculateStreak() {
             let streak = 0;
-            let currentDate = new Date();
+            let checkDate = new Date(); // Start from today
+            const todayStr = checkDate.toISOString().split('T')[0];
 
             while (true) {
-                const dateStr = currentDate.toISOString().split('T')[0];
-                const relevantHabits = habits.filter(habit => new Date(habit.created_at).setHours(0,0,0,0) <= currentDate.setHours(0,0,0,0));
+                const dateStr = checkDate.toISOString().split('T')[0];
+                const dateObj = new Date(dateStr);
+
+                const relevantHabits = habits.filter(habit =>
+                    new Date(habit.created_at).setHours(0,0,0,0) <= dateObj.setHours(0,0,0,0)
+                );
 
                 if (relevantHabits.length === 0) {
-                      if (streak > 0) break;
-                       break;
+                    if (dateStr === todayStr) streak = 0;
+                    break;
                 }
 
-                const completedOnDate = completions[dateStr] || [];
-                const allRelevantCompleted = relevantHabits.every(habit => completedOnDate.includes(habit.id));
+                const completedToday = completions[dateStr] || [];
+                const allCompleted = relevantHabits.every(habit => completedToday.includes(habit.id));
 
-                if (allRelevantCompleted) {
-                    streak++;
-                } else {
-                    if (dateStr !== today) {
-                        break;
-                    } else {
-                        streak = 0;
-                        break;
-                    }
+                if (!allCompleted) {
+                    if (dateStr === todayStr) streak = 0;
+                    break;
                 }
-                currentDate.setDate(currentDate.getDate() - 1);
+                streak++;
+                checkDate.setDate(checkDate.getDate() - 1);
             }
             return streak;
         }
 
         function calculateCompletionRate() {
             if (habits.length === 0) return 0;
-
             let totalCompleted = 0;
             let totalPossible = 0;
-            const historyDates = Object.keys(completions); // Dates with completion data
 
-            // Iterate all dates since the *first* habit was created for a potentially more accurate rate
             const firstHabitDate = habits.length > 0
                 ? new Date(Math.min(...habits.map(h => new Date(h.created_at).getTime())))
                 : new Date();
             firstHabitDate.setHours(0, 0, 0, 0);
 
-            let currentDate = new Date();
-            currentDate.setHours(0, 0, 0, 0);
-            const todayDateOnly = new Date(today).setHours(0,0,0,0); // Use today's date string for comparison
+            let currentDate = new Date(); currentDate.setHours(0, 0, 0, 0);
+            const todayDateOnly = new Date(today).setHours(0,0,0,0);
 
             while (currentDate >= firstHabitDate && currentDate <= todayDateOnly) {
                 const dateStr = currentDate.toISOString().split('T')[0];
                 const completedOnDate = completions[dateStr] || [];
 
                 habits.forEach(habit => {
-                    // Only count if the habit existed on that date
                     if (new Date(habit.created_at).setHours(0,0,0,0) <= currentDate.getTime()) {
                         totalPossible++;
                         if (completedOnDate.includes(habit.id)) {
@@ -1083,12 +868,8 @@
                         }
                     }
                 });
-
-                // Move to the previous day
                 currentDate.setDate(currentDate.getDate() - 1);
             }
-
-
             return totalPossible === 0 ? 0 : Math.round((totalCompleted / totalPossible) * 100);
         }
 
@@ -1099,40 +880,38 @@
             });
             return total;
         }
+        // --- End Calculation functions ---
 
-        // --- Update Stats Display ---
         function updateStats() {
-             if (isLoading) {
-                 currentStreakElement.textContent = '-';
-                 completionRateElement.textContent = '-';
-                 totalCompletedElement.textContent = '-';
-                 return;
+             if (isLoading) return; // Don't calculate if loading
+            currentStreakElement.textContent = calculateStreak();
+            completionRateElement.textContent = `${calculateCompletionRate()}%`;
+            totalCompletedElement.textContent = calculateTotalCompleted();
+        }
+
+        function displayRandomQuote() {
+            const randomIndex = Math.floor(Math.random() * quotes.length);
+            motivationQuoteElement.style.opacity = '0';
+            setTimeout(() => {
+                motivationQuoteElement.textContent = quotes[randomIndex];
+                 motivationQuoteElement.style.opacity = '1';
+            }, 200);
+        }
+
+        // === Modal Functions (mostly unchanged) ===
+         function showEditModal(e) {
+             const button = e.target.closest('.edit-habit');
+             if (!button || isLoading) return; // Prevent edit during load
+             const habitId = parseInt(button.getAttribute('data-id'));
+              if (isNaN(habitId)) return;
+             const habit = habits.find(h => h.id === habitId);
+             if (habit) {
+                 currentEditId = habitId;
+                 editHabitInput.value = habit.text;
+                 editModal.classList.add('show');
+                 setTimeout(() => editHabitInput.focus(), 50);
              }
-            const streak = calculateStreak();
-            const completionRate = calculateCompletionRate(); // Use updated calc
-            const totalCompleted = calculateTotalCompleted();
-
-            currentStreakElement.textContent = streak;
-            completionRateElement.textContent = `${completionRate}%`;
-            totalCompletedElement.textContent = totalCompleted;
-        }
-
-
-        // --- Modal Functions ---
-        function showEditModal(e) {
-            const button = e.target.closest('.edit-habit');
-             if (!button || isLoading) return;
-
-            const habitId = parseInt(button.getAttribute('data-id'));
-            const habit = habits.find(h => h.id === habitId);
-
-            if (habit) {
-                currentEditId = habitId;
-                editHabitInput.value = habit.text;
-                editModal.classList.add('show');
-                editHabitInput.focus();
-            }
-        }
+         }
 
         function closeModal() {
             editModal.classList.remove('show');
@@ -1140,34 +919,58 @@
             editHabitInput.value = '';
         }
 
-
-        // --- Event Listeners ---
-        addHabitBtn.addEventListener('click', addHabit);
-        habitInput.addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') addHabit();
-        });
-
-        saveEditBtn.addEventListener('click', saveEdit);
-        editHabitInput.addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') saveEdit();
-        });
-        cancelEditBtn.addEventListener('click', closeModal);
-        closeModalBtn.addEventListener('click', closeModal);
-
-        editModal.addEventListener('click', (e) => {
-            if (e.target === editModal) closeModal();
-        });
-
-
-        // --- Initial Load ---
-        async function initializeApp() {
-            console.log("⚠️ App running without user authentication. Data is public.");
-            today = formatDate();
-            await loadInitialData();
-            attachHabitListeners(); // Ensure listeners are attached after initial load
+        // === Event Listener Attachment Function ===
+        function addHabitEventListeners() {
+            // Use event delegation on the list container for checkbox, edit, delete
+             habitList.removeEventListener('click', handleHabitListClick); // Remove old listener
+             habitList.addEventListener('click', handleHabitListClick);   // Add new one
         }
 
-        initializeApp(); // Start the app
+         // Delegated event handler for items inside the habit list
+         function handleHabitListClick(event) {
+             const checkbox = event.target.closest('.habit-checkbox');
+             const editButton = event.target.closest('.edit-habit');
+             const deleteButton = event.target.closest('.delete-habit');
+
+             if (checkbox) {
+                 toggleHabit(event); // Pass the original event
+                 return;
+             }
+             if (editButton) {
+                 showEditModal(event); // Pass the original event
+                 return;
+             }
+             if (deleteButton) {
+                 deleteHabit(event); // Pass the original event
+                 return;
+             }
+         }
+
+
+        // === Initialization ===
+        function initializeApp() {
+            if (!supabase) return; // Stop if Supabase init failed
+
+            today = formatDate(); // Set global 'today' string
+            displayRandomQuote(); // Show initial quote
+            setInterval(displayRandomQuote, 15000); // Change quote periodically
+
+            // Add global listeners (outside the habit list)
+            addHabitBtn.addEventListener('click', addHabit);
+            habitInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') addHabit(); });
+            saveEditBtn.addEventListener('click', saveEdit);
+            cancelEditBtn.addEventListener('click', closeModal);
+            closeModalBtn.addEventListener('click', closeModal);
+            editHabitInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') saveEdit(); });
+            editModal.addEventListener('click', (e) => { if (e.target === editModal) closeModal(); });
+            resetDataBtn.addEventListener('click', handleResetData);
+
+            loadInitialData(); // Fetch data from Supabase
+            // Note: renderHabits is called within setLoading(false) after data loads
+        }
+
+        // === Start the App ===
+        initializeApp();
 
     </script>
 </body>
