@@ -273,12 +273,12 @@
         </div>
     </div>
 
-    <script type="module" defer>// Use type="module" for async/await top-level
+    <script type="module" defer>
         // === WARNING ===
         // This setup does NOT use user authentication or Row Level Security.
         // Data is publicly readable and writable via the Anon Key.
         // === === === ===
-
+    
         // === DOM Elements ===
         const habitInput = document.getElementById('habit-input');
         const addHabitBtn = document.getElementById('add-habit-btn');
@@ -297,30 +297,47 @@
         const calendarElement = document.getElementById('calendar');
         const motivationQuoteElement = document.getElementById('motivation-quote');
         const resetDataBtn = document.getElementById('reset-data-btn');
-
+    
         // === Supabase Setup ===
-        let supabase = null; // Initialize later
+        let supabaseClient = null; // RENAME variable to avoid confusion
         try {
-            if (typeof SUPABASE_URL === 'undefined' || typeof SUPABASE_ANON_KEY === 'undefined') {
-                throw new Error("Supabase config variables not found. Check config.js or Vercel env vars.");
+            // Check config variables from config.js / Vercel env vars
+            if (typeof window.SUPABASE_URL === 'undefined' || window.SUPABASE_URL === '' || typeof window.SUPABASE_ANON_KEY === 'undefined' || window.SUPABASE_ANON_KEY === '') {
+                throw new Error("Supabase config variables not found on window. Check config.js or Vercel env vars.");
             }
-            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+            const supabaseUrl = window.SUPABASE_URL;
+            const supabaseKey = window.SUPABASE_ANON_KEY;
+    
+            // Check if the Supabase library object exists globally (loaded by the CDN script)
+            if (typeof supabase === 'undefined' || !supabase || typeof supabase.createClient !== 'function') {
+                 // Fallback check on window object just in case
+                 if (typeof window.supabase === 'undefined' || !window.supabase || typeof window.supabase.createClient !== 'function') {
+                     throw new Error("Supabase client library (supabase-js) not loaded correctly from CDN.");
+                 }
+                 // Use the one found on window if the global one isn't there
+                 supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+            } else {
+                 // Use the globally found 'supabase' object directly
+                 supabaseClient = supabase.createClient(supabaseUrl, supabaseKey); // <-- Use the library's createClient
+            }
+    
             console.log("Supabase client initialized.");
-             console.log("⚠️ App running without user authentication. Data is public.");
+            console.log("⚠️ App running without user authentication. Data is public.");
         } catch (error) {
             console.error("Supabase Initialization Error:", error);
             alert(`Fatal Error: Could not initialize Supabase. ${error.message}`);
-            // Disable the whole app visually
+            // Disable the whole app visually if init fails
             document.body.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--danger); font-family: var(--kawaii-font);"><h1>Initialization Failed</h1><p>Could not connect to the data store. Please check the console and configuration.</p></div>`;
         }
-
+    
         // === State ===
         let habits = []; // Will be fetched from Supabase
         let completions = {}; // { 'YYYY-MM-DD': [habitId1, ...] } - Will be fetched
         let currentEditId = null;
         let today = ''; // Set in initializeApp
         let isLoading = true; // Tracks loading state
-
+    
         // === Motivational Quotes ===
         const quotes = [
             "One step at a time!", "You've got this! ✨", "Keep shining brightly!",
@@ -329,40 +346,37 @@
             "You are capable of amazing things!", "Grow stronger every day.",
             "Be proud of your efforts!", "Consistency is key!", "Plant positivity, harvest happiness."
         ];
-
+    
         // === Helper Functions ===
         function formatDate() {
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             const todayDate = new Date();
-            // Display date immediately
             currentDateElement.textContent = todayDate.toLocaleDateString('en-US', options);
             return todayDate.toISOString().split('T')[0]; // YYYY-MM-DD format
         }
-
+    
         function setLoading(loading) {
             isLoading = loading;
-            // Disable/Enable form elements
             habitInput.disabled = loading;
             addHabitBtn.disabled = loading;
-            resetDataBtn.disabled = loading; // Also disable reset during load
-            // Disable habit interaction buttons during load
-            habitList.querySelectorAll('button, .habit-checkbox').forEach(el => el.disabled = loading);
-
+            resetDataBtn.disabled = loading;
+            // Disable habit interaction buttons during load - select within habitList IF it exists
+            habitList?.querySelectorAll('button, .habit-checkbox').forEach(el => el.disabled = loading);
+    
+    
             if (loading) {
-                loadingState.style.display = 'block'; // Show loading
+                loadingState.style.display = 'block';
                 habitList.style.display = 'none';
                 emptyState.style.display = 'none';
-                // Reset stats to indicate loading
                 currentStreakElement.textContent = '-';
                 completionRateElement.textContent = '-';
                 totalCompletedElement.textContent = '-';
             } else {
-                loadingState.style.display = 'none'; // Hide loading
-                // renderHabits will decide whether to show the list or empty state
-                 renderHabits(); // Call renderHabits AFTER loading is false
+                loadingState.style.display = 'none';
+                renderHabits(); // Render AFTER loading is false
             }
         }
-
+    
         function escapeHTML(str) {
             const div = document.createElement('div');
             if (typeof str === 'string') {
@@ -371,36 +385,30 @@
             }
             return '';
         }
-
+    
         // === Supabase Interaction Functions ===
         async function loadInitialData() {
-             if (!supabase) return; // Don't proceed if Supabase failed to init
-
+             if (!supabaseClient) return; // Don't proceed if Supabase failed to init
             setLoading(true);
             try {
-                // Fetch habits in parallel with completions
-                const habitsPromise = supabase
+                const habitsPromise = supabaseClient // Use supabaseClient
                     .from('habits')
                     .select('id, text, created_at')
                     .order('created_at', { ascending: true });
-
-                // Fetch completions for the relevant period (e.g., last 30 days for calendar)
+    
                 const startDate = new Date();
-                startDate.setDate(startDate.getDate() - 30); // Adjust range if needed
+                startDate.setDate(startDate.getDate() - 30); // Fetch range for calendar
                 const startDateString = startDate.toISOString().split('T')[0];
-                const completionsPromise = supabase
+                const completionsPromise = supabaseClient // Use supabaseClient
                     .from('completions')
                     .select('habit_id, completed_at')
                     .gte('completed_at', startDateString);
-
-                // Await both promises
+    
                 const [habitsResult, completionsResult] = await Promise.all([habitsPromise, completionsPromise]);
-
-                // Process Habits
+    
                 if (habitsResult.error) throw habitsResult.error;
                 habits = habitsResult.data || [];
-
-                // Process Completions
+    
                 if (completionsResult.error) throw completionsResult.error;
                 completions = {}; // Reset completions object
                 (completionsResult.data || []).forEach(comp => {
@@ -412,47 +420,41 @@
                         completions[dateStr].push(comp.habit_id);
                     }
                 });
-
-                console.log("Data loaded:", { habits, completions });
-
-                // Update UI (Render happens in finally block via setLoading)
+    
+                console.log("Data loaded:", { habits: habits.length, completionDates: Object.keys(completions).length });
                 updateStats();
                 renderCalendar();
-
-
+    
             } catch (error) {
                 console.error("Error loading data:", error.message);
                 alert(`Oops! 🥺 Could not load data: ${error.message}`);
-                // Keep UI disabled if loading fails critically
                 setLoading(true); // Stay in loading state visually
-                 loadingState.innerHTML = `<p>Error loading data. Please refresh. (｡•́︿•̀｡)</p>`; // Update message
+                loadingState.innerHTML = `<p>Error loading data. Please refresh. (｡•́︿•̀｡)</p>`; // Update message
             } finally {
-                // Render happens here after state is updated
+                // Final state update and render happens via setLoading
                 setLoading(false);
             }
         }
-
+    
         async function addHabit() {
-             if (!supabase || isLoading) return;
+             if (!supabaseClient || isLoading) return;
             const text = habitInput.value.trim();
             if (text === '') return;
-
-            setLoading(true); // Disable UI
-
+    
+            setLoading(true);
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient // Use supabaseClient
                     .from('habits')
-                    .insert({ text: text }) // No user_id needed
-                    .select() // Return the inserted row
-                    .single(); // Expecting one row
-
+                    .insert({ text: text })
+                    .select()
+                    .single();
+    
                 if (error) throw error;
-
+    
                 if (data) {
-                    habits.push(data); // Add to local state
-                    // UI update will happen via setLoading(false) -> renderHabits()
-                     habitInput.value = ''; // Clear input
-                    // Flash effect will be added in renderHabits logic now
+                    habits.push(data);
+                    habitInput.value = '';
+                     // UI update via setLoading(false) -> renderHabits()
                 } else {
                      console.warn("Habit insert successful but no data returned.");
                 }
@@ -463,221 +465,195 @@
                 setLoading(false); // Re-enable UI and trigger re-render
             }
         }
-
+    
         async function toggleHabit(e) {
-             if (!supabase || isLoading) return;
-            const checkbox = e.target;
-            const habitId = parseInt(checkbox.getAttribute('data-id')); // Ensure ID is number
+             if (!supabaseClient || isLoading) return;
+            const checkbox = e.target.closest('.habit-checkbox'); // Target the container div
+            if (!checkbox) return; // Exit if click wasn't on a checkbox or its content
+    
+            const habitId = parseInt(checkbox.getAttribute('data-id'));
             const habitItem = checkbox.closest('.habit-item');
             if (isNaN(habitId) || !habitItem) return;
-
+    
             const isCurrentlyCompleted = habitItem.classList.contains('completed');
-            const targetState = !isCurrentlyCompleted; // The state we want to achieve
-
+            const targetState = !isCurrentlyCompleted;
+    
             // --- Optimistic UI Update ---
             habitItem.classList.toggle('completed', targetState);
             checkbox.setAttribute('aria-checked', targetState.toString());
             checkbox.setAttribute('title', targetState ? 'Mark as incomplete' : 'Mark as complete');
-
-            // Update local completions state optimistically
+    
             if (!completions[today]) completions[today] = [];
             const completedIndex = completions[today].indexOf(habitId);
-
-            if (targetState) { // Adding completion
+            if (targetState) {
                 if (completedIndex === -1) completions[today].push(habitId);
-            } else { // Removing completion
+            } else {
                 if (completedIndex > -1) completions[today].splice(completedIndex, 1);
             }
-            // Update stats/calendar based on optimistic state
             updateStats();
             renderCalendar();
             // --- End Optimistic Update ---
-
-            // Prevent further clicks while processing
-            checkbox.disabled = true;
-
+    
+            checkbox.style.pointerEvents = 'none'; // Prevent further clicks during processing
+    
             try {
                 if (targetState) { // Insert completion
-                    const { error } = await supabase
+                    const { error } = await supabaseClient // Use supabaseClient
                         .from('completions')
                         .insert({ habit_id: habitId, completed_at: today });
-                    // Handle unique constraint violation gracefully
-                    if (error && error.code === '23505') {
-                        console.warn(`Completion already exists for habit ${habitId} on ${today}.`);
-                    } else if (error) {
-                        throw error; // Throw other errors
-                    }
+                    if (error && error.code === '23505') { console.warn(`Completion already exists for habit ${habitId} on ${today}.`); }
+                    else if (error) { throw error; }
                 } else { // Delete completion
-                    const { error } = await supabase
+                    const { error } = await supabaseClient // Use supabaseClient
                         .from('completions')
                         .delete()
                         .match({ habit_id: habitId, completed_at: today });
                     if (error) throw error;
                 }
                 console.log(`Completion toggled successfully for habit ${habitId} on ${today}`);
-
             } catch (error) {
                 console.error("Error toggling completion:", error.message);
                 alert(`Couldn't update completion: ${error.message} Σ(°ロ°)`);
-
                 // --- Revert Optimistic Update on Error ---
-                habitItem.classList.toggle('completed', !targetState); // Toggle back
+                habitItem.classList.toggle('completed', !targetState);
                 checkbox.setAttribute('aria-checked', (!targetState).toString());
                 checkbox.setAttribute('title', !targetState ? 'Mark as incomplete' : 'Mark as complete');
-                if (targetState) { // If we tried to add, remove it
-                    if (completedIndex === -1) { // Only remove if it was added optimistically
-                         const revertIndex = completions[today].indexOf(habitId);
-                         if (revertIndex > -1) completions[today].splice(revertIndex, 1);
-                     }
-                } else { // If we tried to remove, add it back
-                    if (completedIndex === -1) completions[today].push(habitId); // Add it back if it wasn't there before optimistic
-                }
-                // Re-render stats/calendar based on reverted state
+                 if (targetState && completedIndex === -1) { // If we added it optimistically
+                     const revertIndex = completions[today]?.indexOf(habitId);
+                     if (revertIndex > -1) completions[today].splice(revertIndex, 1);
+                 } else if (!targetState && completedIndex > -1) { // If we removed it optimistically
+                     if (!completions[today]?.includes(habitId)) completions[today].push(habitId);
+                 }
                 updateStats();
                 renderCalendar();
                 // --- End Revert ---
             } finally {
-                checkbox.disabled = false; // Re-enable checkbox
+                checkbox.style.pointerEvents = 'auto'; // Re-enable checkbox
             }
         }
-
-        // Separate deletion logic after animation
+    
         async function performDeletion(habitId) {
-             if (!supabase) return;
+             if (!supabaseClient) return;
             try {
-                 // Delete from Supabase (cascade should handle completions)
-                const { error } = await supabase
+                const { error } = await supabaseClient // Use supabaseClient
                     .from('habits')
                     .delete()
                     .match({ id: habitId });
                 if (error) throw error;
-
-                // Update local state *after* successful deletion
+    
                 habits = habits.filter(habit => habit.id !== habitId);
                 Object.keys(completions).forEach(date => {
                     completions[date] = completions[date]?.filter(id => id !== habitId) ?? [];
                 });
-
-                // Re-render the list fully
-                renderHabits();
-
+    
+                renderHabits(); // Re-render list fully
             } catch (error) {
                  console.error("Error performing deletion:", error.message);
                  alert(`Couldn't delete habit from database: ${error.message} (ಥ﹏ಥ)`);
-                 // Optional: Re-render to bring the item back visually if DB delete failed
-                 renderHabits();
+                 renderHabits(); // Re-render to potentially bring item back if DB delete failed
             } finally {
-                 // setLoading might be needed if we disable UI during animation
                  setLoading(false); // Ensure UI is re-enabled
             }
         }
-
-        // Visual deletion trigger
+    
         function deleteHabit(e) {
             const button = e.target.closest('.delete-habit');
-            if (!button || isLoading) return; // Prevent during load/other ops
+            if (!button || isLoading) return;
             const habitId = parseInt(button.getAttribute('data-id'));
              if (isNaN(habitId)) return;
             const habitText = habits.find(h => h.id === habitId)?.text || 'this habit';
-
+    
             if (confirm(`Delete "${escapeHTML(habitText)}" forever? (｡•́︿•̀｡) This cannot be undone.`)) {
                 const habitItem = button.closest('.habit-item');
                 if (habitItem) {
-                    setLoading(true); // Disable other actions during animation/deletion
-                    // Apply transition styles for fade out/shrink
+                    setLoading(true); // Disable actions during animation/delete
                     habitItem.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out, margin-bottom 0.3s ease-out, padding 0.3s ease-out, height 0.3s ease-out';
                     habitItem.style.opacity = '0';
                     habitItem.style.transform = 'scale(0.95)';
-                    habitItem.style.marginBottom = '-1.2rem'; // Adjust based on your gap
+                    habitItem.style.marginBottom = `-${getComputedStyle(habitList).gap}`; // Collapse gap
                     habitItem.style.paddingTop = '0';
                     habitItem.style.paddingBottom = '0';
                     habitItem.style.height = '0';
-                    // Wait for animation, then perform actual deletion
-                    setTimeout(() => performDeletion(habitId), 300); // Match transition duration
+                    habitItem.style.borderWidth = '0'; // Collapse border visually
+                    setTimeout(() => performDeletion(habitId), 300); // Match transition
                 } else {
-                    // Fallback if item not found
-                    performDeletion(habitId);
+                    performDeletion(habitId); // Fallback
                 }
             }
         }
-
-
+    
         async function saveEdit() {
-             if (!supabase || isLoading) return;
+             if (!supabaseClient || isLoading) return;
             const newText = editHabitInput.value.trim();
             if (newText === '' || !currentEditId) return;
-
-             // Find the original habit text for potential revert
-             const originalHabit = habits.find(h => h.id === currentEditId);
-             const originalText = originalHabit ? originalHabit.text : '';
-
-
-             // --- Optimistic UI Update ---
+    
              const habitIndex = habits.findIndex(h => h.id === currentEditId);
+             const originalText = (habitIndex !== -1) ? habits[habitIndex].text : '';
+    
+             // --- Optimistic UI Update ---
              if (habitIndex !== -1) {
-                 habits[habitIndex].text = newText; // Update local state first
-                 renderHabits(); // Re-render list with new text
+                 habits[habitIndex].text = newText;
+                 // Update the text directly in the DOM for instant feedback without full re-render
+                 const habitItem = habitList.querySelector(`.habit-item[data-id="${currentEditId}"] .habit-text`);
+                 if (habitItem) habitItem.textContent = newText;
+                 // Don't call renderHabits() here to avoid list shift/animation retrigger
              }
-             closeModal(); // Close modal immediately
+             closeModal();
              // --- End Optimistic Update ---
-
-
-            setLoading(true); // Prevent other actions while saving
+    
+            setLoading(true); // Prevent actions while saving
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient // Use supabaseClient
                     .from('habits')
                     .update({ text: newText })
                     .match({ id: currentEditId })
-                    .select() // Select to confirm update
+                    .select()
                     .single();
-
+    
                 if (error) throw error;
-
-                // Data should match our optimistic update, log if needed
                 console.log("Habit updated successfully in DB:", data);
-
-
+    
             } catch (error) {
                 console.error("Error updating habit:", error.message);
                 alert(`Couldn't save changes: ${error.message} (ノಠ益ಠ)ノ彡┻━┻`);
-
                  // --- Revert Optimistic Update on Error ---
                  if (habitIndex !== -1) {
-                     habits[habitIndex].text = originalText; // Restore original text
-                     renderHabits(); // Re-render list with original text
+                     habits[habitIndex].text = originalText; // Restore local state
+                      const habitItemText = habitList.querySelector(`.habit-item[data-id="${currentEditId}"] .habit-text`);
+                      if (habitItemText) habitItemText.textContent = originalText; // Restore DOM text
                  }
                  // --- End Revert ---
             } finally {
                 setLoading(false); // Re-enable UI
             }
         }
-
+    
         async function handleResetData() {
-             if (!supabase || isLoading) return;
+            if (!supabaseClient || isLoading) return;
              if (confirm('Are you absolutely sure? This will delete ALL your habits and history permanently! Σ(°ロ°)')) {
                  if(confirm('Last chance! Are you really, really sure you want to reset everything?')) {
                     setLoading(true);
                     try {
-                         // Delete all completions first (optional, cascade might handle)
-                         const { error: completionsError } = await supabase
+                        // It's safer to delete from the referencing table first if cascade isn't 100% trusted or set up
+                         const { error: completionsError } = await supabaseClient // Use supabaseClient
                              .from('completions')
                              .delete()
-                             .neq('id', -1); // Condition to delete all, use something always true
+                             .neq('id', -1); // Condition to delete all rows
                           if (completionsError) throw completionsError;
-
-                         // Delete all habits
-                         const { error: habitsError } = await supabase
+                          console.log("Completions deleted from DB.");
+    
+                         const { error: habitsError } = await supabaseClient // Use supabaseClient
                              .from('habits')
                              .delete()
-                             .neq('id', -1); // Condition to delete all
+                             .neq('id', -1); // Condition to delete all rows
                          if (habitsError) throw habitsError;
-
+                         console.log("Habits deleted from DB.");
+    
                         // Reset local state
                         habits = [];
                         completions = {};
-                        // UI update happens in finally via setLoading
-                        displayRandomQuote(); // Show a fresh quote
-
+                        displayRandomQuote();
+    
                     } catch(error) {
                          console.error("Error resetting data:", error.message);
                          alert(`Couldn't reset data: ${error.message} (ಥ﹏ಥ)`);
@@ -687,30 +663,39 @@
                  }
             }
         }
-
-
+    
         // === Rendering Functions ===
         function renderHabits() {
             if (isLoading) return; // Don't render while initial loading
-
+    
             const todayCompletions = completions[today] || [];
             const fragment = document.createDocumentFragment(); // Use fragment for performance
-
+    
             if (habits.length === 0) {
                 emptyState.style.display = 'block';
-                habitList.style.display = 'none'; // Hide list container
+                habitList.style.display = 'none';
                 habitList.innerHTML = ''; // Clear just in case
             } else {
                 emptyState.style.display = 'none';
                 habitList.style.display = 'flex'; // Show list container
-
+    
+                // Check if habit list element exists before proceeding
+                if (!habitList) {
+                    console.error("Habit list element not found!");
+                    return;
+                }
+    
                 habits.forEach((habit, index) => {
                     const isCompleted = todayCompletions.includes(habit.id);
                     const habitElement = document.createElement('div');
                     habitElement.className = `habit-item ${isCompleted ? 'completed' : ''}`;
                     habitElement.dataset.id = habit.id; // Use dataset for ID
-                    habitElement.style.animationDelay = `${index * 0.07}s`; // Stagger animation
-
+                    // Apply animation only if it wasn't just added (avoids double animation)
+                     if (!habitElement.classList.contains('flash-add')) {
+                         habitElement.style.animationDelay = `${index * 0.07}s`;
+                     }
+    
+    
                     habitElement.innerHTML = `
                         <div class="habit-checkbox" data-id="${habit.id}" role="checkbox" aria-checked="${isCompleted}" title="${isCompleted ? 'Mark as incomplete' : 'Mark as complete'}"></div>
                         <div class="habit-text">${escapeHTML(habit.text)}</div>
@@ -721,37 +706,32 @@
                     `;
                     fragment.appendChild(habitElement);
                 });
-                habitList.innerHTML = ''; // Clear previous content
-                habitList.appendChild(fragment); // Add new content
+                habitList.innerHTML = ''; // Clear previous content safely
+                habitList.appendChild(fragment); // Add new content efficiently
             }
-
-            addHabitEventListeners(); // Attach listeners to the new elements
+    
+            // Event listeners should be attached after rendering
+            // addHabitEventListeners(); // This is now handled by delegation in initializeApp
+    
             updateStats(); // Always update stats after render
             renderCalendar(); // Always update calendar after render
         }
-
-         // (renderCalendar, calculate functions remain largely the same as previous Supabase version)
-         // ... include the renderCalendar, calculateStreak, calculateCompletionRate, calculateTotalCompleted functions
-         // from the previous verified Supabase example here ...
-         function renderCalendar() {
-             // If loading, maybe show a placeholder in the calendar too
+    
+        function renderCalendar() {
              if (isLoading && !calendarElement.querySelector('.loading-placeholder')) {
                  calendarElement.innerHTML = '<div class="loading-placeholder" style="text-align: center; color: var(--text-light); padding: 2rem;">Loading calendar...</div>';
                  return;
              }
-             if (isLoading) return; // Don't recalculate if still loading
-
-             // Remove placeholder if it exists and we are no longer loading
+             if (isLoading) return;
+    
              const placeholder = calendarElement.querySelector('.loading-placeholder');
              if (placeholder) placeholder.remove();
-
-
+    
             calendarElement.innerHTML = ''; // Clear previous calendar
             const days = [];
             const todayDate = new Date();
             const todayStr = todayDate.toISOString().split('T')[0];
-
-            // --- Get HSL values from CSS variables ---
+    
             const computedStyle = getComputedStyle(document.documentElement);
             const hue = parseInt(computedStyle.getPropertyValue('--calendar-hue').trim());
             const parseCssValue = (value) => parseInt(value.trim().replace('%', ''));
@@ -759,35 +739,34 @@
             const satMin = parseCssValue(computedStyle.getPropertyValue('--calendar-sat-min'));
             const lightMax = parseCssValue(computedStyle.getPropertyValue('--calendar-light-max'));
             const lightMin = parseCssValue(computedStyle.getPropertyValue('--calendar-light-min'));
-            // ---
-
+    
             for (let i = 27; i >= 0; i--) {
                 const date = new Date();
                 date.setDate(todayDate.getDate() - i);
                 days.push(date);
             }
-
+    
             days.forEach(date => {
                 const dateStr = date.toISOString().split('T')[0];
                 const dayOfMonth = date.getDate();
                 const dateObj = new Date(dateStr);
-
+    
                 const dayElement = document.createElement('div');
                 dayElement.className = 'calendar-day';
                 dayElement.textContent = dayOfMonth;
-
+    
                 const relevantHabits = habits.filter(habit =>
                     new Date(habit.created_at).setHours(0,0,0,0) <= dateObj.setHours(0,0,0,0)
                 );
                 const completedOnDate = completions[dateStr] || [];
-
+    
                 let numRelevant = relevantHabits.length;
                 let numCompleted = 0;
                 if (numRelevant > 0) {
-                    numCompleted = relevantHabits.filter(habit => completedOnDate.includes(habit.id)).length;
+                    numCompleted = relevantHabits.filter(habit => completedOnDate.includes(parseInt(habit.id))).length; // Ensure ID comparison is number-to-number if needed
                 }
                 const completionPercentage = numRelevant > 0 ? (numCompleted / numRelevant) : 0;
-
+    
                  dayElement.classList.remove('fully-completed');
                  if (completionPercentage > 0) {
                     const currentSat = satMin + (satMax - satMin) * completionPercentage;
@@ -799,7 +778,7 @@
                  } else {
                      dayElement.style.backgroundColor = ''; // Use CSS default
                  }
-
+    
                 if (numRelevant > 0) {
                     dayElement.title = `Completed ${numCompleted}/${numRelevant} habits on ${date.toLocaleDateString()}`;
                 } else {
@@ -811,28 +790,29 @@
                 calendarElement.appendChild(dayElement);
             });
         }
-
+    
         function calculateStreak() {
             let streak = 0;
             let checkDate = new Date(); // Start from today
             const todayStr = checkDate.toISOString().split('T')[0];
-
+    
             while (true) {
                 const dateStr = checkDate.toISOString().split('T')[0];
                 const dateObj = new Date(dateStr);
-
+    
                 const relevantHabits = habits.filter(habit =>
                     new Date(habit.created_at).setHours(0,0,0,0) <= dateObj.setHours(0,0,0,0)
                 );
-
+    
                 if (relevantHabits.length === 0) {
                     if (dateStr === todayStr) streak = 0;
                     break;
                 }
-
+    
                 const completedToday = completions[dateStr] || [];
-                const allCompleted = relevantHabits.every(habit => completedToday.includes(habit.id));
-
+                // Ensure IDs are numbers if comparing numbers <-> strings
+                const allCompleted = relevantHabits.every(habit => completedToday.includes(parseInt(habit.id)));
+    
                 if (!allCompleted) {
                     if (dateStr === todayStr) streak = 0;
                     break;
@@ -842,28 +822,29 @@
             }
             return streak;
         }
-
+    
         function calculateCompletionRate() {
             if (habits.length === 0) return 0;
             let totalCompleted = 0;
             let totalPossible = 0;
-
+    
             const firstHabitDate = habits.length > 0
                 ? new Date(Math.min(...habits.map(h => new Date(h.created_at).getTime())))
                 : new Date();
             firstHabitDate.setHours(0, 0, 0, 0);
-
+    
             let currentDate = new Date(); currentDate.setHours(0, 0, 0, 0);
             const todayDateOnly = new Date(today).setHours(0,0,0,0);
-
+    
             while (currentDate >= firstHabitDate && currentDate <= todayDateOnly) {
                 const dateStr = currentDate.toISOString().split('T')[0];
                 const completedOnDate = completions[dateStr] || [];
-
+    
                 habits.forEach(habit => {
                     if (new Date(habit.created_at).setHours(0,0,0,0) <= currentDate.getTime()) {
                         totalPossible++;
-                        if (completedOnDate.includes(habit.id)) {
+                         // Ensure ID comparison is number-to-number if needed
+                        if (completedOnDate.includes(parseInt(habit.id))) {
                             totalCompleted++;
                         }
                     }
@@ -872,7 +853,7 @@
             }
             return totalPossible === 0 ? 0 : Math.round((totalCompleted / totalPossible) * 100);
         }
-
+    
         function calculateTotalCompleted() {
             let total = 0;
             Object.values(completions).forEach(dayCompletions => {
@@ -880,15 +861,14 @@
             });
             return total;
         }
-        // --- End Calculation functions ---
-
+    
         function updateStats() {
              if (isLoading) return; // Don't calculate if loading
             currentStreakElement.textContent = calculateStreak();
             completionRateElement.textContent = `${calculateCompletionRate()}%`;
             totalCompletedElement.textContent = calculateTotalCompleted();
         }
-
+    
         function displayRandomQuote() {
             const randomIndex = Math.floor(Math.random() * quotes.length);
             motivationQuoteElement.style.opacity = '0';
@@ -897,11 +877,11 @@
                  motivationQuoteElement.style.opacity = '1';
             }, 200);
         }
-
-        // === Modal Functions (mostly unchanged) ===
+    
+        // === Modal Functions ===
          function showEditModal(e) {
              const button = e.target.closest('.edit-habit');
-             if (!button || isLoading) return; // Prevent edit during load
+             if (!button || isLoading) return;
              const habitId = parseInt(button.getAttribute('data-id'));
               if (isNaN(habitId)) return;
              const habit = habits.find(h => h.id === habitId);
@@ -912,26 +892,26 @@
                  setTimeout(() => editHabitInput.focus(), 50);
              }
          }
-
+    
         function closeModal() {
             editModal.classList.remove('show');
             currentEditId = null;
             editHabitInput.value = '';
         }
-
+    
         // === Event Listener Attachment Function ===
         function addHabitEventListeners() {
-            // Use event delegation on the list container for checkbox, edit, delete
+             // Use event delegation on the list container for checkbox, edit, delete
              habitList.removeEventListener('click', handleHabitListClick); // Remove old listener
              habitList.addEventListener('click', handleHabitListClick);   // Add new one
         }
-
+    
          // Delegated event handler for items inside the habit list
          function handleHabitListClick(event) {
              const checkbox = event.target.closest('.habit-checkbox');
              const editButton = event.target.closest('.edit-habit');
              const deleteButton = event.target.closest('.delete-habit');
-
+    
              if (checkbox) {
                  toggleHabit(event); // Pass the original event
                  return;
@@ -945,16 +925,19 @@
                  return;
              }
          }
-
-
+    
         // === Initialization ===
         function initializeApp() {
-            if (!supabase) return; // Stop if Supabase init failed
-
+            if (!supabaseClient) {
+                 console.error("Initialization failed: Supabase client not available.");
+                 // Potentially update UI to show a permanent error if client is null
+                 return;
+            }
+    
             today = formatDate(); // Set global 'today' string
             displayRandomQuote(); // Show initial quote
             setInterval(displayRandomQuote, 15000); // Change quote periodically
-
+    
             // Add global listeners (outside the habit list)
             addHabitBtn.addEventListener('click', addHabit);
             habitInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') addHabit(); });
@@ -964,14 +947,16 @@
             editHabitInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') saveEdit(); });
             editModal.addEventListener('click', (e) => { if (e.target === editModal) closeModal(); });
             resetDataBtn.addEventListener('click', handleResetData);
-
+    
+            // Add event listeners for habits list using delegation
+            addHabitEventListeners(); // Call this once initially
+    
             loadInitialData(); // Fetch data from Supabase
-            // Note: renderHabits is called within setLoading(false) after data loads
         }
-
+    
         // === Start the App ===
         initializeApp();
-
+    
     </script>
 </body>
 </html>
