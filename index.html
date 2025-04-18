@@ -794,9 +794,6 @@
         const saveEditBtn = document.getElementById('save-edit');
         const cancelEditBtn = document.getElementById('cancel-edit');
         const closeModalBtn = document.getElementById('close-modal');
-        const currentStreakElement = document.getElementById('current-streak');
-        const completionRateElement = document.getElementById('completion-rate');
-        const totalCompletedElement = document.getElementById('total-completed');
         const calendarElement = document.getElementById('calendar');
         const motivationQuoteElement = document.getElementById('motivation-quote');
         const resetDataBtn = document.getElementById('reset-data-btn');
@@ -871,9 +868,6 @@
                 loadingState.style.display = 'block';
                 habitList.style.display = 'none';
                 emptyState.style.display = 'none';
-                currentStreakElement.textContent = '-';
-                completionRateElement.textContent = '-';
-                totalCompletedElement.textContent = '-';
             } else {
                 loadingState.style.display = 'none';
                 renderHabits(); // Render AFTER loading is false
@@ -1367,9 +1361,6 @@
 
         function updateStats() {
             if (isLoading) return; // Don't calculate if loading
-            currentStreakElement.textContent = calculateStreak();
-            completionRateElement.textContent = `${calculateCompletionRate()}%`;
-            totalCompletedElement.textContent = calculateTotalCompleted();
         }
 
         function displayRandomQuote() {
