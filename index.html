@@ -86,15 +86,15 @@
         }
 
         .main-content-wrapper>#habits-card {
-            flex: 2;
-            /* Give habits more space */
+            flex: 1;
+            /* Adjusted flex */
         }
 
         .main-content-wrapper>.stats-section {
             flex: 1;
-            /* Calendar takes less space */
-            min-width: 300px;
-            /* Ensure calendar doesn't get too squished */
+            /* Adjusted flex */
+            /* min-width: 300px; */
+            /* Removed min-width for now */
             /* Optionally add a max-width if needed */
         }
 
@@ -117,7 +117,7 @@
         }
 
         .container {
-            max-width: 800px;
+            max-width: 1100px;
             margin: 0 auto;
         }
 
@@ -233,6 +233,7 @@
             font-weight: 700;
             transition: background-color 0.2s ease, transform 0.15s ease-out;
             box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
         }
 
         button:hover {
@@ -740,9 +741,7 @@
         }
 
         /* --- Responsive Layout --- */
-        @media (max-width: 900px) {
-
-            /* Adjust breakpoint as needed */
+        @media (max-width: 1000px) {
             .main-content-wrapper {
                 flex-direction: column;
                 gap: 2rem;
