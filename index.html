@@ -628,12 +628,30 @@
         </div>
     </div>
 
-    <script>
-        // DOM Elements (same as before, plus icons maybe)
+    <script type="module"> // Use type="module" for async/await top-level
+        // --- WARNING ---
+        // This setup does NOT use user authentication or Row Level Security.
+        // Anyone with your Supabase URL and Anon Key can read, add, edit,
+        // and delete ALL habits and completions.
+        // Only use this if you understand and accept the risks.
+        // --- --- --- ---
+
+        // --- Supabase Setup ---
+        if (typeof SUPABASE_URL === 'undefined' || typeof SUPABASE_ANON_KEY === 'undefined') {
+            alert("⚠️ Supabase configuration not found! Make sure config.js is present and correct.");
+            // You might want to disable the app further here
+        }
+
+        const supabaseUrl = SUPABASE_URL;
+        const supabaseKey = SUPABASE_ANON_KEY;
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        // --- DOM Elements ---
         const habitInput = document.getElementById('habit-input');
         const addHabitBtn = document.getElementById('add-habit-btn');
         const habitList = document.getElementById('habit-list');
         const emptyState = document.getElementById('empty-state');
+        const loadingState = document.getElementById('loading-state');
         const currentDateElement = document.getElementById('current-date');
         const editModal = document.getElementById('edit-modal');
         const editHabitInput = document.getElementById('edit-habit-input');
@@ -645,303 +663,318 @@
         const totalCompletedElement = document.getElementById('total-completed');
         const calendarElement = document.getElementById('calendar');
 
-        // State (same as before)
-        let habits = JSON.parse(localStorage.getItem('habits')) || [];
-        let habitHistory = JSON.parse(localStorage.getItem('habitHistory')) || {};
+        // --- App State ---
+        let habits = []; // Stores { id, text, created_at } fetched from Supabase
+        let completions = {}; // Stores { 'YYYY-MM-DD': [habitId1, habitId2], ... } fetched from Supabase
         let currentEditId = null;
+        let today = ''; // YYYY-MM-DD format
+        let isLoading = true;
 
-        // Format current date (same as before)
+        // --- Helper Functions ---
         function formatDate() {
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            const today = new Date();
-            currentDateElement.textContent = today.toLocaleDateString('en-US', options);
-            return today.toISOString().split('T')[0]; // YYYY-MM-DD format
+            const todayDate = new Date();
+            currentDateElement.textContent = todayDate.toLocaleDateString('en-US', options);
+            return todayDate.toISOString().split('T')[0]; // YYYY-MM-DD format
         }
 
-        const today = formatDate();
-
-        // Initialize history for today if needed (same as before)
-        if (!habitHistory[today]) {
-            habitHistory[today] = { completed: [] };
-            saveHistory();
+        function setLoading(loading) {
+            isLoading = loading;
+            habitInput.disabled = loading;
+            addHabitBtn.disabled = loading;
+            if (loading) {
+                loadingState.style.display = 'block';
+                habitList.style.display = 'none';
+                emptyState.style.display = 'none';
+            } else {
+                loadingState.style.display = 'none';
+                 // renderHabits will handle showing list or empty state
+            }
         }
 
-        // Save habits to localStorage (same as before)
-        function saveHabits() {
-            localStorage.setItem('habits', JSON.stringify(habits));
-            renderHabits();
-            updateStats();
+        // Basic HTML escaping function
+         function escapeHTML(str) {
+             const div = document.createElement('div');
+             if (typeof str === 'string') {
+                div.appendChild(document.createTextNode(str));
+                return div.innerHTML;
+             }
+             return ''; // Return empty string if input is not a string
+         }
+
+        // --- Supabase Interaction Functions ---
+
+        async function loadInitialData() {
+            setLoading(true);
+            try {
+                // Fetch habits (no user filter needed)
+                const { data: habitData, error: habitError } = await supabase
+                    .from('habits')
+                    .select('id, text, created_at')
+                    .order('created_at', { ascending: true });
+
+                if (habitError) throw habitError;
+                habits = habitData || [];
+
+                // Fetch completions (no user filter needed)
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - 30);
+                const startDateString = startDate.toISOString().split('T')[0];
+
+                const { data: completionData, error: completionError } = await supabase
+                    .from('completions')
+                    .select('habit_id, completed_at')
+                    .gte('completed_at', startDateString);
+
+                if (completionError) throw completionError;
+
+                // Process completions
+                completions = {};
+                (completionData || []).forEach(comp => {
+                    const dateStr = comp.completed_at;
+                    if (!completions[dateStr]) {
+                        completions[dateStr] = [];
+                    }
+                    // Ensure no duplicates if DB constraint somehow failed or data is old
+                    if (!completions[dateStr].includes(comp.habit_id)) {
+                        completions[dateStr].push(comp.habit_id);
+                    }
+                });
+
+                renderHabits();
+                renderCalendar();
+                updateStats();
+
+            } catch (error) {
+                console.error("Error loading data:", error.message);
+                alert(`Oops! 🥺 Could not load data: ${error.message}`);
+            } finally {
+                setLoading(false);
+            }
         }
 
-        // Save history to localStorage (same as before)
-        function saveHistory() {
-            localStorage.setItem('habitHistory', JSON.stringify(habitHistory));
-            updateStats();
-            renderCalendar(); // Re-render calendar on history change
+        async function addHabit() {
+            const text = habitInput.value.trim();
+            if (text === '' || isLoading) return;
+
+            setLoading(true);
+
+            try {
+                // Insert habit (no user_id)
+                const { data, error } = await supabase
+                    .from('habits')
+                    .insert({ text: text })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                if (data) {
+                    habits.push(data);
+                    renderHabits();
+                    updateStats();
+                    renderCalendar();
+                    habitInput.value = '';
+                } else {
+                     console.warn("Insert successful but no data returned.");
+                }
+
+            } catch (error) {
+                console.error("Error adding habit:", error.message);
+                alert(`Couldn't add habit: ${error.message} (｡•́︿•̀｡)`);
+            } finally {
+                 setLoading(false);
+            }
         }
 
-        // Render habits (Updated with Kawaii elements)
+        async function toggleHabit(e) {
+            const habitId = parseInt(e.target.getAttribute('data-id'));
+            if (isNaN(habitId) || isLoading) return;
+
+             const habitElement = e.target.closest('.habit-item');
+             const isCurrentlyCompleted = habitElement.classList.contains('completed');
+
+             // --- Optimistic UI Update ---
+             habitElement.classList.toggle('completed');
+             if (!completions[today]) completions[today] = [];
+             const completedIndex = completions[today].indexOf(habitId);
+
+             if (isCurrentlyCompleted) { // Removing completion
+                 if (completedIndex > -1) completions[today].splice(completedIndex, 1);
+             } else { // Adding completion
+                 if (completedIndex === -1) completions[today].push(habitId);
+             }
+             updateStats();
+             renderCalendar(); // Update calendar day style
+             // --- End Optimistic Update ---
+
+
+            try {
+                if (isCurrentlyCompleted) {
+                    // Delete completion record (no user_id)
+                    const { error } = await supabase
+                        .from('completions')
+                        .delete()
+                        .match({ habit_id: habitId, completed_at: today });
+                    if (error) throw error;
+                } else {
+                    // Insert completion record (no user_id)
+                    const { error } = await supabase
+                        .from('completions')
+                        .insert({ habit_id: habitId, completed_at: today });
+                     // Handle potential unique constraint violation (user clicked twice fast)
+                     if (error && error.code === '23505') { // Postgres code for unique violation
+                         console.warn(`Completion for habit ${habitId} on ${today} already exists (ignored).`);
+                         // No need to throw, the state is likely already correct due to optimistic update
+                     } else if (error) {
+                         throw error; // Throw other errors
+                     }
+                }
+                 console.log(`Completion toggled successfully for habit ${habitId} on ${today}`);
+
+            } catch (error) {
+                console.error("Error toggling completion:", error.message);
+                alert(`Couldn't update completion: ${error.message} Σ(°ロ°)`);
+
+                 // --- Revert Optimistic Update on Error ---
+                 habitElement.classList.toggle('completed'); // Toggle back
+                 if (isCurrentlyCompleted) { // Add it back if removed
+                      if (completedIndex === -1) completions[today].push(habitId);
+                  } else { // Remove it if added
+                      if (completedIndex > -1) completions[today].splice(completedIndex, 1);
+                  }
+                 updateStats();
+                 renderCalendar();
+                 // --- End Revert ---
+            }
+        }
+
+        async function deleteHabit(e) {
+             const button = e.target.closest('.delete-habit');
+             if (!button || isLoading) return;
+
+             const habitId = parseInt(button.getAttribute('data-id'));
+             if (isNaN(habitId)) return;
+
+             const habitText = habits.find(h => h.id === habitId)?.text || 'this habit';
+
+             if (confirm(`Are you sure you want to delete "${habitText}"? (｡•́︿•̀｡)`)) {
+                setLoading(true);
+                try {
+                    // Delete from Supabase (no user_id). Cascade delete should handle completions.
+                    const { error } = await supabase
+                        .from('habits')
+                        .delete()
+                        .match({ id: habitId });
+
+                    if (error) throw error;
+
+                    // Remove from local state
+                    habits = habits.filter(habit => habit.id !== habitId);
+                    Object.keys(completions).forEach(date => {
+                        completions[date] = completions[date].filter(id => id !== habitId);
+                    });
+
+                    renderHabits();
+                    updateStats();
+                    renderCalendar();
+
+                 } catch (error) {
+                    console.error("Error deleting habit:", error.message);
+                    alert(`Couldn't delete habit: ${error.message} (ಥ﹏ಥ)`);
+                 } finally {
+                    setLoading(false);
+                 }
+             }
+        }
+
+         async function saveEdit() {
+            const text = editHabitInput.value.trim();
+            if (text === '' || !currentEditId || isLoading) return;
+
+            setLoading(true);
+            try {
+                // Update habit (no user_id)
+                const { data, error } = await supabase
+                    .from('habits')
+                    .update({ text: text })
+                    .match({ id: currentEditId })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                if (data) {
+                    const habitIndex = habits.findIndex(h => h.id === currentEditId);
+                    if (habitIndex !== -1) {
+                        habits[habitIndex] = data;
+                    }
+                    renderHabits();
+                }
+                 closeModal();
+
+            } catch (error) {
+                console.error("Error updating habit:", error.message);
+                alert(`Couldn't save changes: ${error.message} (ノಠ益ಠ)ノ彡┻━┻`);
+            } finally {
+                 setLoading(false);
+            }
+        }
+
+        // --- Rendering Functions (mostly unchanged, ensure escapeHTML is used) ---
         function renderHabits() {
+            if (isLoading) return;
+
             if (habits.length === 0) {
                 emptyState.style.display = 'block';
+                habitList.style.display = 'none';
                 habitList.innerHTML = '';
-                updateStats(); // Update stats even when empty
-                return;
-            }
-
-            emptyState.style.display = 'none';
-            // Store current scroll position
-            const scrollPosition = habitList.scrollTop;
-
-            habitList.innerHTML = ''; // Clear list
-
-            habits.forEach((habit, index) => {
-                const isCompleted = habitHistory[today] &&
-                                    habitHistory[today].completed &&
-                                    habitHistory[today].completed.includes(habit.id);
-
-                const habitElement = document.createElement('div');
-                habitElement.className = `habit-item ${isCompleted ? 'completed' : ''}`;
-                // Delay animation for existing items for a smoother load feel, instant for new ones
-                habitElement.style.animationDelay = `${index * 0.05}s`;
-
-                // Use Font Awesome icons for actions
-                habitElement.innerHTML = `
-                    <div class="habit-checkbox" data-id="${habit.id}" role="checkbox" aria-checked="${isCompleted}"></div>
-                    <div class="habit-text">${habit.text}</div>
-                    <div class="habit-actions">
-                        <button class="btn-small edit-habit" data-id="${habit.id}" title="Edit Habit"><i class="fa-solid fa-pencil"></i></button>
-                        <button class="btn-small btn-danger delete-habit" data-id="${habit.id}" title="Delete Habit"><i class="fa-solid fa-trash-can"></i></button>
-                    </div>
-                `;
-                habitList.appendChild(habitElement);
-            });
-
-            // Restore scroll position
-            habitList.scrollTop = scrollPosition;
-
-
-            // Add event listeners (same logic, applied to new structure)
-            document.querySelectorAll('.habit-checkbox').forEach(checkbox => {
-                checkbox.addEventListener('click', toggleHabit);
-            });
-
-            document.querySelectorAll('.edit-habit').forEach(button => {
-                button.addEventListener('click', showEditModal);
-            });
-
-            document.querySelectorAll('.delete-habit').forEach(button => {
-                button.addEventListener('click', deleteHabit);
-            });
-             updateStats(); // Update stats after rendering
-        }
-
-        // Add new habit (Added animation trigger)
-        function addHabit() {
-            const text = habitInput.value.trim();
-            if (text === '') return;
-
-            const newHabit = {
-                id: Date.now().toString(),
-                text,
-                createdAt: new Date().toISOString()
-            };
-
-            habits.push(newHabit);
-            saveHabits(); // This calls renderHabits which now includes animation
-            habitInput.value = '';
-        }
-
-        // Toggle habit completion (same logic)
-        function toggleHabit(e) {
-            const habitId = e.target.getAttribute('data-id');
-
-            if (!habitHistory[today]) {
-                habitHistory[today] = { completed: [] };
-            }
-
-            // Ensure completed array exists
-             habitHistory[today].completed = habitHistory[today].completed || [];
-
-            const completedIndex = habitHistory[today].completed.indexOf(habitId);
-
-            if (completedIndex === -1) {
-                habitHistory[today].completed.push(habitId);
             } else {
-                habitHistory[today].completed.splice(completedIndex, 1);
-            }
+                emptyState.style.display = 'none';
+                habitList.style.display = 'flex';
+                habitList.innerHTML = '';
 
-            saveHistory();
-            renderHabits(); // Re-render to update visual state
-        }
+                const todayCompletions = completions[today] || [];
 
-        // Delete habit (Added confirmation)
-        function deleteHabit(e) {
-            // Use closest to get the button even if icon is clicked
-            const button = e.target.closest('.delete-habit');
-            if (!button) return;
+                habits.forEach((habit, index) => {
+                    const isCompleted = todayCompletions.includes(habit.id);
+                    const habitElement = document.createElement('div');
+                    habitElement.className = `habit-item ${isCompleted ? 'completed' : ''}`;
 
-            const habitId = button.getAttribute('data-id');
-            const habitText = habits.find(h => h.id === habitId)?.text || 'this habit';
-
-            // Cute confirmation!
-            if (confirm(`Are you sure you want to delete "${habitText}"? (｡•́︿•̀｡)`)) {
-                habits = habits.filter(habit => habit.id !== habitId);
-
-                // Also remove from history
-                Object.keys(habitHistory).forEach(date => {
-                     if (habitHistory[date] && habitHistory[date].completed) {
-                        habitHistory[date].completed = habitHistory[date].completed.filter(id => id !== habitId);
-                    }
+                    habitElement.innerHTML = `
+                        <div class="habit-checkbox" data-id="${habit.id}" role="checkbox" aria-checked="${isCompleted}"></div>
+                        <div class="habit-text">${escapeHTML(habit.text)}</div>
+                        <div class="habit-actions">
+                            <button class="btn-small edit-habit" data-id="${habit.id}" title="Edit Habit"><i class="fa-solid fa-pencil"></i></button>
+                            <button class="btn-small btn-danger delete-habit" data-id="${habit.id}" title="Delete Habit"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    `;
+                    habitList.appendChild(habitElement);
                 });
-
-                saveHabits();
-                saveHistory();
             }
+             attachHabitListeners();
         }
 
-        // Show edit modal (same logic)
-        function showEditModal(e) {
-             // Use closest to get the button even if icon is clicked
-            const button = e.target.closest('.edit-habit');
-             if (!button) return;
+         function attachHabitListeners() {
+             document.querySelectorAll('.habit-checkbox').forEach(checkbox => {
+                 checkbox.removeEventListener('click', toggleHabit); // Prevent duplicates
+                 checkbox.addEventListener('click', toggleHabit);
+             });
+             document.querySelectorAll('.edit-habit').forEach(button => {
+                  button.removeEventListener('click', showEditModal);
+                 button.addEventListener('click', showEditModal);
+             });
+             document.querySelectorAll('.delete-habit').forEach(button => {
+                  button.removeEventListener('click', deleteHabit);
+                  button.addEventListener('click', deleteHabit);
+             });
+         }
 
-            const habitId = button.getAttribute('data-id');
-            const habit = habits.find(h => h.id === habitId);
-
-            if (habit) {
-                currentEditId = habitId;
-                editHabitInput.value = habit.text;
-                editModal.classList.add('show');
-                editHabitInput.focus(); // Focus input when modal opens
-            }
-        }
-
-        // Save edited habit (same logic)
-        function saveEdit() {
-            const text = editHabitInput.value.trim();
-            if (text === '' || !currentEditId) return;
-
-            const habitIndex = habits.findIndex(h => h.id === currentEditId);
-            if (habitIndex !== -1) {
-                habits[habitIndex].text = text;
-                saveHabits();
-            }
-
-            closeModal();
-        }
-
-         // Edit on Enter key in modal
-        editHabitInput.addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') {
-                saveEdit();
-            }
-        });
-
-        // Close modal (same logic)
-        function closeModal() {
-            editModal.classList.remove('show');
-            currentEditId = null;
-        }
-
-        // --- Calculation Functions (Same logic, more robust checks) ---
-
-        function calculateStreak() {
-            let streak = 0;
-            let currentDate = new Date(); // Start from today
-
-            while (true) {
-                const dateStr = currentDate.toISOString().split('T')[0];
-                const relevantHabits = habits.filter(habit => new Date(habit.createdAt) <= currentDate);
-
-                // Break if no relevant habits existed on this day OR no history for this day
-                if (relevantHabits.length === 0) break;
-                 if (!habitHistory[dateStr] || !habitHistory[dateStr].completed) {
-                     // If it's not today, break the streak. If it IS today, streak is 0 but don't break yet (allow future checks).
-                     if (dateStr !== today) break;
-                 }
-
-                const completedOnDate = habitHistory[dateStr]?.completed || [];
-                const allCompleted = relevantHabits.every(habit => completedOnDate.includes(habit.id));
-
-                if (!allCompleted) {
-                     // If today's habits aren't all complete, streak is 0.
-                     // If a previous day's habits weren't all complete, break the loop.
-                     if (dateStr !== today) break;
-                     else {
-                         // Reset streak if today isn't fully complete (relevant for initial load)
-                         // But only if today actually has history/completed entries
-                         if (habitHistory[today] && habitHistory[today].completed) streak = 0;
-                         break; // Stop checking backwards once today is evaluated
-                     }
-                 }
-
-                // Only increment streak if all relevant habits were completed
-                 if (allCompleted) {
-                    streak++;
-                 }
-
-                // Move to the previous day
-                currentDate.setDate(currentDate.getDate() - 1);
-            }
-
-            return streak;
-        }
-
-
-        function calculateCompletionRate() {
-             if (habits.length === 0) return 0;
-
-            const historyDates = Object.keys(habitHistory);
-            if (historyDates.length === 0) return 0;
-
-            let totalCompleted = 0;
-            let totalPossible = 0;
-
-            historyDates.forEach(dateStr => {
-                const date = new Date(dateStr);
-                 // Ensure we only count days that actually have completion data
-                 if (!habitHistory[dateStr] || !habitHistory[dateStr].completed) return;
-
-                const completedOnDate = habitHistory[dateStr].completed;
-
-                habits.forEach(habit => {
-                    // Only count if the habit existed on that date
-                    if (new Date(habit.createdAt).setHours(0,0,0,0) <= date.setHours(0,0,0,0)) {
-                        totalPossible++;
-                        if (completedOnDate.includes(habit.id)) {
-                            totalCompleted++;
-                        }
-                    }
-                });
-            });
-
-            return totalPossible === 0 ? 0 : Math.round((totalCompleted / totalPossible) * 100);
-        }
-
-        function calculateTotalCompleted() {
-            let total = 0;
-            Object.values(habitHistory).forEach(day => {
-                if (day && day.completed) { // Check if day and day.completed exist
-                    total += day.completed.length;
-                }
-            });
-            return total;
-        }
-
-        // Update stats (same logic)
-        function updateStats() {
-            const streak = calculateStreak();
-            const completionRate = calculateCompletionRate();
-            const totalCompleted = calculateTotalCompleted();
-
-            currentStreakElement.textContent = streak;
-            completionRateElement.textContent = `${completionRate}%`;
-            totalCompletedElement.textContent = totalCompleted;
-        }
-
-        // Render calendar (same logic, uses CSS classes now)
         function renderCalendar() {
+             if (isLoading) {
+                  calendarElement.innerHTML = '<div style="text-align: center; color: var(--text-light); padding: 1rem;">Loading calendar...</div>';
+                  return;
+             }
             calendarElement.innerHTML = '';
             const days = [];
             const todayDate = new Date();
@@ -961,22 +994,23 @@
                 dayElement.className = 'calendar-day';
                 dayElement.textContent = dayOfMonth;
 
-                // Check if *any* relevant habit was completed on this day for visual feedback
-                const relevantHabits = habits.filter(habit => new Date(habit.createdAt) <= date);
-                const completedOnDate = habitHistory[dateStr]?.completed || [];
-                const anyCompleted = relevantHabits.some(habit => completedOnDate.includes(habit.id));
+                const relevantHabitsForDate = habits.filter(habit => {
+                    const habitCreationDate = new Date(habit.created_at);
+                    return habitCreationDate.setHours(0,0,0,0) <= date.setHours(0,0,0,0);
+                });
+
+                const completedOnDate = completions[dateStr] || [];
+                const anyCompleted = relevantHabitsForDate.some(habit => completedOnDate.includes(habit.id));
 
                  if (anyCompleted) {
                     dayElement.classList.add('has-completed');
-                    // Optional: Add a title showing which habits were completed
-                     const completedNames = relevantHabits
+                     const completedNames = relevantHabitsForDate
                          .filter(h => completedOnDate.includes(h.id))
                          .map(h => h.text);
                      if (completedNames.length > 0) {
-                         dayElement.title = `Completed: ${completedNames.join(', ')}`;
+                         dayElement.title = `Completed: ${escapeHTML(completedNames.join(', '))}`;
                      }
                  }
-
 
                 if (dateStr === todayStr) {
                     dayElement.classList.add('today');
@@ -986,27 +1020,154 @@
             });
         }
 
-        // Event listeners (same logic)
+        // --- Calculation Functions (logic is unchanged, relies on local state) ---
+        function calculateStreak() {
+            let streak = 0;
+            let currentDate = new Date();
+
+            while (true) {
+                const dateStr = currentDate.toISOString().split('T')[0];
+                const relevantHabits = habits.filter(habit => new Date(habit.created_at).setHours(0,0,0,0) <= currentDate.setHours(0,0,0,0));
+
+                if (relevantHabits.length === 0) {
+                      if (streak > 0) break;
+                       break;
+                }
+
+                const completedOnDate = completions[dateStr] || [];
+                const allRelevantCompleted = relevantHabits.every(habit => completedOnDate.includes(habit.id));
+
+                if (allRelevantCompleted) {
+                    streak++;
+                } else {
+                    if (dateStr !== today) {
+                        break;
+                    } else {
+                        streak = 0;
+                        break;
+                    }
+                }
+                currentDate.setDate(currentDate.getDate() - 1);
+            }
+            return streak;
+        }
+
+        function calculateCompletionRate() {
+            if (habits.length === 0) return 0;
+
+            let totalCompleted = 0;
+            let totalPossible = 0;
+            const historyDates = Object.keys(completions); // Dates with completion data
+
+            // Iterate all dates since the *first* habit was created for a potentially more accurate rate
+            const firstHabitDate = habits.length > 0
+                ? new Date(Math.min(...habits.map(h => new Date(h.created_at).getTime())))
+                : new Date();
+            firstHabitDate.setHours(0, 0, 0, 0);
+
+            let currentDate = new Date();
+            currentDate.setHours(0, 0, 0, 0);
+            const todayDateOnly = new Date(today).setHours(0,0,0,0); // Use today's date string for comparison
+
+            while (currentDate >= firstHabitDate && currentDate <= todayDateOnly) {
+                const dateStr = currentDate.toISOString().split('T')[0];
+                const completedOnDate = completions[dateStr] || [];
+
+                habits.forEach(habit => {
+                    // Only count if the habit existed on that date
+                    if (new Date(habit.created_at).setHours(0,0,0,0) <= currentDate.getTime()) {
+                        totalPossible++;
+                        if (completedOnDate.includes(habit.id)) {
+                            totalCompleted++;
+                        }
+                    }
+                });
+
+                // Move to the previous day
+                currentDate.setDate(currentDate.getDate() - 1);
+            }
+
+
+            return totalPossible === 0 ? 0 : Math.round((totalCompleted / totalPossible) * 100);
+        }
+
+        function calculateTotalCompleted() {
+            let total = 0;
+            Object.values(completions).forEach(dayCompletions => {
+                total += dayCompletions.length;
+            });
+            return total;
+        }
+
+        // --- Update Stats Display ---
+        function updateStats() {
+             if (isLoading) {
+                 currentStreakElement.textContent = '-';
+                 completionRateElement.textContent = '-';
+                 totalCompletedElement.textContent = '-';
+                 return;
+             }
+            const streak = calculateStreak();
+            const completionRate = calculateCompletionRate(); // Use updated calc
+            const totalCompleted = calculateTotalCompleted();
+
+            currentStreakElement.textContent = streak;
+            completionRateElement.textContent = `${completionRate}%`;
+            totalCompletedElement.textContent = totalCompleted;
+        }
+
+
+        // --- Modal Functions ---
+        function showEditModal(e) {
+            const button = e.target.closest('.edit-habit');
+             if (!button || isLoading) return;
+
+            const habitId = parseInt(button.getAttribute('data-id'));
+            const habit = habits.find(h => h.id === habitId);
+
+            if (habit) {
+                currentEditId = habitId;
+                editHabitInput.value = habit.text;
+                editModal.classList.add('show');
+                editHabitInput.focus();
+            }
+        }
+
+        function closeModal() {
+            editModal.classList.remove('show');
+            currentEditId = null;
+            editHabitInput.value = '';
+        }
+
+
+        // --- Event Listeners ---
         addHabitBtn.addEventListener('click', addHabit);
         habitInput.addEventListener('keyup', (e) => {
             if (e.key === 'Enter') addHabit();
         });
 
         saveEditBtn.addEventListener('click', saveEdit);
+        editHabitInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') saveEdit();
+        });
         cancelEditBtn.addEventListener('click', closeModal);
         closeModalBtn.addEventListener('click', closeModal);
 
-        // Close modal if clicking outside the content
         editModal.addEventListener('click', (e) => {
-            if (e.target === editModal) {
-                closeModal();
-            }
+            if (e.target === editModal) closeModal();
         });
 
-        // Initial render
-        renderHabits();
-        renderCalendar();
-        // updateStats is called within renderHabits and renderCalendar now
+
+        // --- Initial Load ---
+        async function initializeApp() {
+            console.log("⚠️ App running without user authentication. Data is public.");
+            today = formatDate();
+            await loadInitialData();
+            attachHabitListeners(); // Ensure listeners are attached after initial load
+        }
+
+        initializeApp(); // Start the app
+
     </script>
 </body>
 </html>
