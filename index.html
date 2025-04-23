@@ -520,7 +520,7 @@
         .stats-title {
             font-size: 1.8rem;
             margin-bottom: 2rem;
-            color: var(--secondary);
+            color: var (--secondary);
             text-align: center;
             font-weight: 700;
         }
@@ -759,6 +759,79 @@
                 /* Take full width when stacked */
                 min-width: initial;
                 /* Reset min-width */
+            }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 0.5rem;
+            }
+
+            .container {
+                max-width: 100vw;
+                padding: 0;
+            }
+
+            header {
+                margin-bottom: 1.2rem;
+                padding: 0.5rem 0.2rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .motivation-quote {
+                font-size: 0.98rem;
+                padding: 0.3rem 0.7rem;
+            }
+
+            .main-content-wrapper {
+                flex-direction: column;
+                gap: 1.2rem;
+            }
+
+            .card,
+            .streak-card,
+            .modal-content {
+                padding: 1.1rem;
+            }
+
+            .form-group {
+                flex-direction: column;
+                gap: 0.6rem;
+            }
+
+            input[type="text"],
+            button {
+                font-size: 1rem;
+                padding: 0.8rem 1rem;
+            }
+
+            .habit-item {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 0.9rem 0.8rem;
+                gap: 0.5rem;
+            }
+
+            .habit-actions {
+                gap: 0.5rem;
+            }
+
+            .calendar {
+                padding: 0.5rem;
+                gap: 0.3rem;
+            }
+
+            .calendar-day {
+                font-size: 0.8rem;
+                border-radius: 8px;
+            }
+
+            .modal-content {
+                padding: 1.2rem;
+                max-width: 98vw;
             }
         }
     </style>
